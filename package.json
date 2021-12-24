@@ -1,0 +1,46 @@
+{
+  "name": "use-calendar",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Calendar & dates composables for Vue 3.",
+  "keywords": [
+    "vue",
+    "calendar",
+    "date",
+    "ssr"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "jest",
+    "example": "vite example",
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kapcash/use-calendar"
+  },
+  "author": {
+    "name": "Kapcash",
+    "url": "https://kapcash.dev"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^1.1.5",
+    "@vue/compiler-sfc": "^3.0.7",
+    "@vue/server-renderer": "^3.0.5",
+    "typescript": "^4.2.3",
+    "vite": "^2.0.5",
+    "vue": "^3.0.5"
+  },
+  "peerDependencies": {
+    "vue": ">=3"
+  },
+  "dependencies": {
+    "date-fns": "^2.27.0"
+  }
+}
