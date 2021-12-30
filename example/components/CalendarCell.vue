@@ -1,5 +1,11 @@
 <template>
-  <button class="calendar-cell" :class="{ light: day.otherMonth }" :disabled="day.disabled.value">
+  <button class="calendar-cell"
+    :class="{
+      light: day.otherMonth,
+      active: day.isSelected.value,
+    }"
+    :disabled="day.disabled.value"
+  >
     {{ day.date.getDate() }}
   </button>
 </template>
@@ -26,7 +32,13 @@ button:not(:disabled):hover {
   cursor: pointer;
   background-color: hsl(0, 0%, 98%);
 }
-.light {
+button.light {
   background-color: lightgoldenrodyellow;
+}
+button.active {
+  background-color: hsl(248, 53%, 58%);
+}
+button.active:hover {
+  background-color: hsl(248, 73%, 73%);
 }
 </style>

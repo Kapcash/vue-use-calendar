@@ -7,7 +7,7 @@
     <div v-for="month of months" class="month">
       {{ month.month + 1 }} - {{ month.year }}
       <div class="grid">
-        <CalendarCell v-for="day of month.days" :day="day" />
+        <CalendarCell v-for="day of month.days" :day="day" @click="listeners.select(day)" />
       </div>
     </div>
   </div>
@@ -22,7 +22,7 @@ const disabledDates = [addDays(new Date(), 10)]
 
 const firstDayOfWeek = 1
 
-const { useMonthlyCalendar, useWeekdays } = useCalendar({
+const { useMonthlyCalendar, useWeekdays, listeners } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,

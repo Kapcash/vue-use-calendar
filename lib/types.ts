@@ -9,6 +9,7 @@ export interface CalendarComposables {
   useWeekdays: () => WeekdaysComposable;
   useMonthlyCalendar: () => MonthlyCalendarComposable;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
+  [key: string]: any,
 }
 
 export interface CalendarOptions {
