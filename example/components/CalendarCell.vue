@@ -19,9 +19,11 @@ button {
   border-radius: 5px;
   width: 30px;
   height: 30px;
+  margin: 4px;
   background-color: hsl(0, 0%, 95%);
 }
 button:not(:disabled):hover {
+  cursor: pointer;
   background-color: hsl(0, 0%, 98%);
 }
 .light {

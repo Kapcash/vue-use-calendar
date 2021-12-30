@@ -1,5 +1,5 @@
 <template>
-  <div class="hello">
+  <div class="calendar">
     <div>{{ currentMonth + 1 }} - {{ currentYear }}</div>
     <div class="weeknames grid">
       <span v-for="weekday of weekdays">{{ weekday }}</span>
@@ -35,8 +35,10 @@ const weekdays = useWeekdays()
 </script>
 
 <style scoped>
-.hello {
-  max-width: 500px;
+.calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .month {
