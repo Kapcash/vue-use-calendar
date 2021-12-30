@@ -15,21 +15,23 @@
 
 <script lang="ts" setup>
 import CalendarCell from './CalendarCell.vue'
-import { useMonthlyCalendar, useWeekdays } from '../../lib/use-calendar'
+import { useCalendar } from '../../lib/use-calendar'
 import { addDays, addMonths } from 'date-fns';
 
 const disabledDates = [addDays(new Date(), 10)]
 
 const firstDayOfWeek = 1
 
-const { months, currentMonth, currentYear } = useMonthlyCalendar({
+const { useMonthlyCalendar, useWeekdays } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
 })
 
-const weekdays = useWeekdays(firstDayOfWeek)
+const { months, currentMonth, currentYear } = useMonthlyCalendar()
+
+const weekdays = useWeekdays()
 </script>
 
 <style scoped>

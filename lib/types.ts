@@ -4,6 +4,13 @@ import { CalendarDate } from "./CalendarDate";
 type DateInput = Date | string
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
+
+export interface CalendarComposables {
+  useWeekdays: () => WeekdaysComposable;
+  useMonthlyCalendar: () => MonthlyCalendarComposable;
+  useWeeklyCalendar: () => WeeklyCalendarComposable;
+}
+
 export interface CalendarOptions {
   from: DateInput;
   to?: DateInput;
@@ -27,3 +34,5 @@ export interface MonthlyCalendarComposable {
 export interface WeeklyCalendarComposable {
   weeks: Array<Week>;
 }
+
+export type WeekdaysComposable = Array<string>
