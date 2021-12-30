@@ -2,6 +2,7 @@ import { Ref, ref } from "vue";
 
 export class CalendarDate {
   readonly date: Date
+  otherMonth: boolean = false
   disabled: Ref<boolean> = ref(false)
   isSelected: Ref<boolean> = ref(false)
   isHovered: Ref<boolean> = ref(false)

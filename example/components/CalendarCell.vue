@@ -1,5 +1,5 @@
 <template>
-  <button class="calendar-cell" :disabled="day.disabled.value">
+  <button class="calendar-cell" :class="{ light: day.otherMonth }" :disabled="day.disabled.value">
     {{ day.date.getDate() }}
   </button>
 </template>
@@ -13,5 +13,18 @@ const { day } = defineProps({
 })
 </script>
 
-<style lang="sass" scoped>
+<style scoped>
+button {
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  width: 30px;
+  height: 30px;
+  background-color: hsl(0, 0%, 95%);
+}
+button:not(:disabled):hover {
+  background-color: hsl(0, 0%, 98%);
+}
+.light {
+  background-color: lightgoldenrodyellow;
+}
 </style>

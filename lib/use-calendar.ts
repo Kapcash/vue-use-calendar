@@ -1,13 +1,16 @@
-import { isAfter, isBefore, isSameDay, lastDayOfMonth } from "date-fns";
+import { generate } from "@vue/compiler-core";
+import { endOfWeek, isAfter, isBefore, isSameDay, lastDayOfMonth, nextSunday, previousMonday, startOfMonth, startOfWeek } from "date-fns";
 import { Ref, ref } from "vue";
 import { CalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string
+type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
 interface CalendarOptions {
   from: DateInput;
   to?: DateInput;
-  disabled: Array<DateInput>
+  disabled: Array<DateInput>;
+  firstDayOfWeek: FirstDayOfWeek;
 }
 
 type Month = {
@@ -24,20 +27,27 @@ interface MonthlyCalendarComposable {
 }
 
 interface WeeklyCalendarComposable {
-  weeks: Array<Week>
+  weeks: Array<Week>;
 }
 
-export function useMonthlyCalendar ({ from, to, disabled }: CalendarOptions): MonthlyCalendarComposable {
+export function useWeekdays (firstDayOfWeek: FirstDayOfWeek): Array<string> {
+  const weekdays = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+  Array.from(Array(firstDayOfWeek)).forEach(() => {
+    weekdays.push(weekdays.shift()!)
+  })
+  return weekdays
+}
+
+export function useMonthlyCalendar ({ from, to, disabled, firstDayOfWeek }: CalendarOptions): MonthlyCalendarComposable {
   const fromDate = new Date(from)
   const toDate = to ? new Date(to) : lastDayOfMonth(fromDate)
   const disabledDates = disabled.map(dis => new Date(dis))
-  const firstDayOfWeek = 0
   const otherMonthsDays = true
   const currentMonth = ref(fromDate.getMonth())
   const currentYear = ref(fromDate.getFullYear())
 
   const days = generateDays(fromDate, toDate, disabledDates)
-  const daysByMonths = wrapByMonth(days, otherMonthsDays)
+  const daysByMonths = wrapByMonth(days, otherMonthsDays, firstDayOfWeek)
 
   return { currentMonth, currentYear, months: daysByMonths }
 }
@@ -94,7 +104,9 @@ export function useMonthlyCalendar ({ from, to, disabled }: CalendarOptions): Mo
 //   return calendarDays;
 // }
 
-function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date>): Array<CalendarDate> {
+function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date> = []): Array<CalendarDate> {
+  fromDate.setHours(0, 0, 0, 0)
+  toDate.setHours(0, 0, 0, 0)
   const dates: Array<CalendarDate> = [new CalendarDate(fromDate)];
   let dayIndex = fromDate.getDate() + 1
 
@@ -116,7 +128,7 @@ function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date>)
  * @param days Sorted array of CalendarDate
  * @returns Array of months including the month, year and array of CalendarDate for that month
  */
-function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays: boolean = false) {
+function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays: boolean = false, firstDayOfWeek: FirstDayOfWeek = 0) {
   const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))]
   const wrap: Month[] = []
 
@@ -125,6 +137,26 @@ function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays: boolean = fals
     const monthFirstDayIndex = days.findIndex(day => day.monthYearIndex === monthYear)
     const monthLastDayIndex = days.findIndex(day => day.monthYearIndex === (monthYear + 1)) - 1
     const monthDays = days.slice(monthFirstDayIndex, monthLastDayIndex)
+
+    if (otherMonthsDays) {
+      const beforeFrom = startOfWeek(monthDays[0]?.date, { weekStartsOn: firstDayOfWeek })
+      const beforeTo = monthDays[0]
+      const beforeDays = generateDays(beforeFrom, beforeTo!.date)
+      beforeDays.forEach(day => {
+        day.disabled.value = true
+        day.otherMonth = true
+      })
+      monthDays.unshift(...beforeDays.slice(0, beforeDays.length - 1))
+      
+      const afterFrom = monthDays[monthDays.length - 1]
+      const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek })
+      const afterDays = generateDays(afterFrom!.date, afterTo)
+      afterDays.forEach(day => {
+        day.disabled.value = true
+        day.otherMonth = true
+      })
+      monthDays.push(...afterDays.slice(1))
+    }
 
     wrap.push({
       year: CalendarDate.yearFromMonthYear(monthYear),
