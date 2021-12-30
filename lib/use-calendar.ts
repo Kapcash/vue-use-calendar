@@ -1,34 +1,7 @@
-import { generate } from "@vue/compiler-core";
-import { endOfWeek, isAfter, isBefore, isSameDay, lastDayOfMonth, nextSunday, previousMonday, startOfMonth, startOfWeek } from "date-fns";
-import { Ref, ref } from "vue";
+import { endOfWeek, isAfter, isBefore, isSameDay, lastDayOfMonth, startOfWeek } from "date-fns";
+import { ref } from "vue";
 import { CalendarDate } from "./CalendarDate";
-
-type DateInput = Date | string
-type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6
-
-interface CalendarOptions {
-  from: DateInput;
-  to?: DateInput;
-  disabled: Array<DateInput>;
-  firstDayOfWeek: FirstDayOfWeek;
-}
-
-type Month = {
-  month: number;
-  year: number;
-  days: CalendarDate[];
-}
-type Week = Array<CalendarDate>
-
-interface MonthlyCalendarComposable {
-  currentMonth: Ref<number>;
-  currentYear: Ref<number>;
-  months: Array<Month>;
-}
-
-interface WeeklyCalendarComposable {
-  weeks: Array<Week>;
-}
+import { CalendarOptions, FirstDayOfWeek, Month, MonthlyCalendarComposable } from './types'
 
 export function useWeekdays (firstDayOfWeek: FirstDayOfWeek): Array<string> {
   const weekdays = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
