@@ -7,7 +7,11 @@
     <div v-for="month of months" class="month">
       {{ month.month + 1 }} - {{ month.year }}
       <div class="grid">
-        <CalendarCell v-for="day of month.days" :day="day" @click="listeners.select(day)" />
+        <CalendarCell
+          v-for="day of month.days"
+          :day="day"
+          @click="listeners.select(day)" 
+        />
       </div>
     </div>
   </div>

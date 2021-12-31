@@ -31,15 +31,16 @@ export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays: boolean
   const wrap: Month[] = []
 
   allMonthYearsIndex.forEach((monthYear) => {
-    // TODO Implement "otherMonthsDays"
     const monthFirstDayIndex = days.findIndex(day => day.monthYearIndex === monthYear)
-    const monthLastDayIndex = days.findIndex(day => day.monthYearIndex === (monthYear + 1)) - 1
+    const nextMonthFirstDayIndex = days.findIndex(day => day.monthYearIndex === (monthYear + 1))
+    // Next month first day not found -> is the last month
+    const monthLastDayIndex = nextMonthFirstDayIndex >= 0 ? nextMonthFirstDayIndex : days.length
     const monthDays = days.slice(monthFirstDayIndex, monthLastDayIndex)
 
     if (otherMonthsDays) {
       const beforeFrom = startOfWeek(monthDays[0]?.date, { weekStartsOn: firstDayOfWeek })
       const beforeTo = monthDays[0]
-      const beforeDays = generateDays(beforeFrom, beforeTo!.date)
+      const beforeDays = generateDays(beforeFrom, beforeTo.date)
       beforeDays.forEach(day => {
         day.disabled.value = true
         day.otherMonth = true
