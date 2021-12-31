@@ -1,5 +1,5 @@
 import { lastDayOfMonth } from "date-fns";
-import { reactive, Ref, ref, shallowRef } from "vue";
+import { reactive, Ref, ref, ShallowRef, shallowRef } from "vue";
 import { CalendarDate } from "./CalendarDate";
 import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable } from './types'
 import { generateDays, wrapByMonth } from "./utils";
@@ -45,7 +45,7 @@ export function useWeeklyCalendar ({ from, to, disabled }: CalendarOptions): () 
 }
 
 export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
-  let selectedDate = shallowRef(new CalendarDate())
+  let selectedDate: ShallowRef<CalendarDate | null> = shallowRef(null)
   
   function selectSingleDate(date: CalendarDate) {
     if (selectedDate.value) {

@@ -1,6 +1,7 @@
 <template>
   <div class="calendar">
-    <div>{{ currentMonth + 1 }} - {{ currentYear }}</div>
+    <div v-if="selectedDate">Selection: {{ selectedDate?.date }}</div>
+    <div>Current month: {{ currentMonth + 1 }} - {{ currentYear }}</div>
     <div class="weeknames grid">
       <span v-for="weekday of weekdays">{{ weekday }}</span>
     </div>
@@ -26,7 +27,7 @@ const disabledDates = [addDays(new Date(), 10)]
 
 const firstDayOfWeek = 1
 
-const { useMonthlyCalendar, useWeekdays, listeners } = useCalendar({
+const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
