@@ -1,5 +1,5 @@
-import { ref, ShallowRef, shallowRef } from "vue";
-import { lastDayOfMonth } from "date-fns";
+import { computed, ref, ShallowRef, shallowRef } from "vue";
+import { isSameDay, lastDayOfMonth } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
 import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable } from './types';
 import { generateDays, wrapByMonth } from "./utils";
@@ -29,30 +29,36 @@ function useWeeklyCalendar ({ from, to, disabled }: CalendarOptions): () => Week
 }
 
 export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
-  
   const fromDate = new Date(globalOptions.from);
   const toDate = globalOptions.to ? new Date(globalOptions.to) : lastDayOfMonth(fromDate);
   const disabledDates = globalOptions.disabled.map(dis => new Date(dis));
-
   const preSelectedDate = Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection];
+
   const days = generateDays(fromDate, toDate, disabledDates, preSelectedDate.filter(Boolean) as Array<Date>);
 
-  const preSelectedCalendarDate = days.filter(day => day.isSelected);
-  const selectedDate: ShallowRef<CalendarDate[] | CalendarDate | null> = shallowRef(preSelectedCalendarDate || null);
+  const selectedDates = computed(() => {
+    return days.filter(day => day.isSelected.value);
+  });
 
-  function selectSingleDate(date: CalendarDate) {
-    if (selectedDate.value) {
-      if (Array.isArray(selectedDate.value)) {
-        selectedDate.value.forEach(date => {
-          date.isSelected.value = false;
-        });
-      } else {
-        selectedDate.value.isSelected.value = false;
-      }
+  function selectSingleDate(clickedDate: CalendarDate) {
+    selectedDates.value.forEach(day => {
+      day.isSelected.value = false;
+    });
+    clickedDate.isSelected.value = true;
+  }
+
+  function selectRangeDates(clickedDate: CalendarDate) {
+    const selection = selectedDates.value;
+    if (selection.length >= 2 && !selection.some(day => isSameDay(day.date, clickedDate.date))) {
+      selection.forEach((day) => {
+        day.isSelected.value = false;
+      });
     }
+    clickedDate.isSelected.value = !clickedDate.isSelected.value;
+  }
 
-    date.isSelected.value = true;
-    selectedDate.value = date;
+  function selectMultipleDates(clickedDate: CalendarDate) {
+    clickedDate.isSelected.value = !clickedDate.isSelected.value;
   }
 
   function useMonthlyCalendar(otherMonthsDays = true): MonthlyCalendarComposable {
@@ -68,9 +74,11 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     useMonthlyCalendar,
     useWeeklyCalendar: useWeeklyCalendar(globalOptions),
     useWeekdays: useWeekdays(globalOptions),
-    selectedDate,
+    selectedDates,
     listeners: {
-      select: selectSingleDate,
+      selectSingle: selectSingleDate,
+      selectMultiple: selectMultipleDates,
+      selectRange: selectRangeDates,
     },
   };
 }
