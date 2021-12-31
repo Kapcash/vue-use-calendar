@@ -2,7 +2,7 @@ import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
 import { FirstDayOfWeek, Month } from "./types";
 
-export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date> = []): Array<CalendarDate> {
+export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date> = [], preSelection: Array<Date> = []): Array<CalendarDate> {
   fromDate.setHours(0, 0, 0, 0);
   toDate.setHours(0, 0, 0, 0);
   const dates: Array<CalendarDate> = [new CalendarDate(fromDate)];
@@ -15,6 +15,7 @@ export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array
   while (isBefore(dates[dates.length - 1]?.date, toDate)) {
     const date = new CalendarDate(fromDate.getFullYear(), fromDate.getMonth(), dayIndex++);
     date.disabled.value = !!disabledDates.find(disabled => isSameDay(date.date, disabled) );
+    date.isSelected.value = !!preSelection.find(selected => isSameDay(date.date, selected) );
     dates.push(date);
   }
 

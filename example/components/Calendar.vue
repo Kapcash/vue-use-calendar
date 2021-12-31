@@ -42,6 +42,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
+  preSelection: addDays(new Date(), 5),
 });
 
 const { months, currentMonth, currentYear } = useMonthlyCalendar();

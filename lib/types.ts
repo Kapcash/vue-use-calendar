@@ -16,8 +16,8 @@ export interface CalendarOptions {
   from: DateInput;
   to?: DateInput;
   disabled: Array<DateInput>;
-  preSelection: Array<Date> | Date;
   firstDayOfWeek: FirstDayOfWeek;
+  preSelection?: Array<Date> | Date;
 }
 
 export type Month = {

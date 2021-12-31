@@ -2,22 +2,22 @@
   <button
     class="calendar-cell"
     :class="{
-      light: day.otherMonth,
-      active: day.isSelected.value,
+      light: props.day.otherMonth,
+      active: props.day.isSelected.value,
     }"
-    :disabled="day.disabled.value"
+    :disabled="props.day.disabled.value"
   >
-    {{ day.date.getDate() }}
+    {{ props.day.date.getDate() }}
   </button>
 </template>
 
 <script setup lang="ts">
-import { PropType, toRefs, defineProps } from 'vue';
+import { PropType } from 'vue';
 import { CalendarDate } from '../../lib/CalendarDate';
 
-const { day } = toRefs(defineProps({
+const props = defineProps({
   day: { type: Object as PropType<CalendarDate>, required: true },
-}));
+});
 </script>
 
 <style scoped>

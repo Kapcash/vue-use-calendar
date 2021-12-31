@@ -3,11 +3,13 @@ const config = {
     "browser": true,
     "amd": true,
     "node": true,
+    'vue/setup-compiler-macros': true,
   },
 
   parser: 'vue-eslint-parser',
   parserOptions: {
     parser: '@typescript-eslint/parser',
+    sourceType: "module",
   },
   plugins: [
     '@typescript-eslint',
@@ -20,6 +22,7 @@ const config = {
   ],
   rules: {
     '@typescript-eslint/ban-ts-comment': 1,
+    '@typescript-eslint/no-non-null-assertion': 0,
     'no-trailing-spaces': 0,
     'no-console': 0,
     'no-use-before-define': 0,
