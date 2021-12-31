@@ -1,5 +1,6 @@
 <template>
-  <button class="calendar-cell"
+  <button
+    class="calendar-cell"
     :class="{
       light: day.otherMonth,
       active: day.isSelected.value,
@@ -11,12 +12,12 @@
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue'
+import { PropType, toRefs, defineProps } from 'vue';
 import { CalendarDate } from '../../lib/CalendarDate';
 
-const { day } = defineProps({
-  day: { type: Object as PropType<CalendarDate>, required: true }
-})
+const { day } = toRefs(defineProps({
+  day: { type: Object as PropType<CalendarDate>, required: true },
+}));
 </script>
 
 <style scoped>

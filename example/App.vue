@@ -9,8 +9,8 @@ import Calendar from './components/Calendar.vue';
 export default defineComponent({
   name: 'App',
   components: {
-    Calendar
-  }
+    Calendar,
+  },
 });
 </script>
 
