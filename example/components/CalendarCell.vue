@@ -4,9 +4,11 @@
     :class="{
       light: props.day.otherMonth,
       active: props.day.isSelected.value,
+      hover: props.day.isHovered.value,
+      between: props.day.isBetween.value,
     }"
     :disabled="props.day.disabled.value"
-  >
+  > 
     {{ props.day.date.getDate() }}
   </button>
 </template>
@@ -35,6 +37,18 @@ button:not(:disabled):hover {
 }
 button.light {
   background-color: lightgoldenrodyellow;
+}
+button.hover {
+  background-color: hsl(157, 75%, 78%);
+}
+button.hover:hover {
+  background-color: hsl(157, 47%, 66%);
+}
+button.between {
+  background-color: hsl(36, 75%, 78%);
+}
+button.between:hover {
+  background-color: hsl(36, 47%, 66%);
 }
 button.active {
   background-color: hsl(248, 53%, 58%);

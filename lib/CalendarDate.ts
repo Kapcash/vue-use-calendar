@@ -5,6 +5,7 @@ export class CalendarDate {
   otherMonth = false;
   disabled: Ref<boolean> = ref(false);
   isSelected: Ref<boolean> = ref(false);
+  isBetween: Ref<boolean> = ref(false);
   isHovered: Ref<boolean> = ref(false);
 
   constructor ();

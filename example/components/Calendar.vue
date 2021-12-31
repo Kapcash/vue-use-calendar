@@ -22,6 +22,8 @@
           :key="day.monthYearIndex"
           :day="day"
           @click="listeners.selectRange(day)"
+          @mouseover="listeners.hoverMultiple(day)"
+          @mouseleave="listeners.resetHover(day)"
         />
       </div>
     </div>
@@ -42,7 +44,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
-  preSelection: [addDays(new Date(), 5), addDays(new Date(), 7), addDays(new Date(), 12)],
+  preSelection: [addDays(new Date(), 5)],
 });
 
 const { months, currentMonth, currentYear } = useMonthlyCalendar();
