@@ -1,16 +1,23 @@
 <template>
-  <button
-    class="calendar-cell"
-    :class="{
-      light: props.day.otherMonth,
-      active: props.day.isSelected.value,
-      hover: props.day.isHovered.value,
-      between: props.day.isBetween.value,
-    }"
-    :disabled="props.day.disabled.value"
-  > 
-    {{ props.day.date.getDate() }}
-  </button>
+  <div
+    class="wrap"
+    @mouseover="$emit('mouseover')"
+    @mouseleave="$emit('mouseleave')"
+  >
+    <button
+      class="calendar-cell"
+      :class="{
+        light: props.day.otherMonth,
+        active: props.day.isSelected.value,
+        hover: props.day.isHovered.value,
+        between: props.day.isBetween.value,
+      }"
+      :disabled="props.day.disabled.value"
+      @click="$emit('click')"
+    > 
+      {{ props.day.date.getDate() }}
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -20,15 +27,23 @@ import { CalendarDate } from '../../lib/CalendarDate';
 const props = defineProps({
   day: { type: Object as PropType<CalendarDate>, required: true },
 });
+
+defineEmits({
+  click: null,
+  mouseover: null,
+  mouseleave: null,
+});
 </script>
 
 <style scoped>
+.wrap {
+  padding: 4px;
+}
 button {
   border: 1px solid lightgray;
   border-radius: 5px;
   width: 30px;
   height: 30px;
-  margin: 4px;
   background-color: hsl(0, 0%, 95%);
 }
 button:not(:disabled):hover {

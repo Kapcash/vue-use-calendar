@@ -27,6 +27,10 @@ export class CalendarDate {
     return this.date.getFullYear() * 12 + this.date.getMonth();
   }
 
+  get dayId (): string {
+    return [this.date.getFullYear(), this.date.getMonth(), this.date.getDate()].join('-');
+  }
+
   static yearFromMonthYear(monthYear: number) {
     return Math.floor(monthYear / 12);
   }

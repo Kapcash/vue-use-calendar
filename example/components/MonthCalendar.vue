@@ -4,21 +4,33 @@
       Selection: {{ selectedDate?.date }}
     </div>
     <div>Current month: {{ currentMonth.month + 1 }} - {{ currentMonth.year }}</div>
-    <div class="weeknames grid">
-      <span
-        v-for="weekday of weekdays"
-        :key="weekday"
-      >{{ weekday }}</span>
-    </div>
-    <div
-      v-for="month of months"
-      :key="month.month + month.year"
-      class="month"
-    >
-      {{ month.month + 1 }} - {{ month.year }}
+    <div lass="month">
+      <span class="actions">
+        <button
+          :disabled="!prevMonthEnabled"
+          @click="prevMonth"
+        >
+          -
+        </button>
+
+        {{ currentMonth.month + 1 }} - {{ currentMonth.year }}
+
+        <button
+          :disabled="!nextMonthEnabled"
+          @click="nextMonth"
+        >
+          +
+        </button>
+      </span>
+      <div class="weeknames grid">
+        <span
+          v-for="weekday of weekdays"
+          :key="weekday"
+        >{{ weekday }}</span>
+      </div>
       <div class="grid">
         <CalendarCell
-          v-for="day of month.days"
+          v-for="day of currentMonth.days"
           :key="day.dayId"
           :day="day"
           @click="listeners.selectRange(day)"
@@ -47,7 +59,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar
   preSelection: [addDays(new Date(), 5)],
 });
 
-const { months, currentMonth } = useMonthlyCalendar();
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar();
 
 const weekdays = useWeekdays();
 </script>
@@ -57,6 +69,12 @@ const weekdays = useWeekdays();
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
 }
 
 .month {

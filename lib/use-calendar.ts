@@ -1,7 +1,7 @@
-import { computed, ref, ShallowRef, shallowRef } from "vue";
+import { computed, ref, shallowRef } from "vue";
 import { isSameDay, lastDayOfMonth } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
-import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable } from './types';
+import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, Month } from './types';
 import { generateDays, getBetweenDays, wrapByMonth } from "./utils";
 
 function useWeekdays ({ firstDayOfWeek }: CalendarOptions): () => WeekdaysComposable {
@@ -94,19 +94,31 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     });
   }
 
-  function resetHover(hoveredDate: CalendarDate) {
+  function resetHover() {
     hoveredDates.value.forEach(day => {
       day.isHovered.value = false;
     });
   }
 
   function useMonthlyCalendar(otherMonthsDays = true): MonthlyCalendarComposable {
-    const currentMonth = ref(fromDate.getMonth());
-    const currentYear = ref(fromDate.getFullYear());
-
     const daysByMonths = wrapByMonth(days, otherMonthsDays, globalOptions.firstDayOfWeek);
+    const currentMonthIndex = ref(0);
+    const currentMonth = computed(() => daysByMonths[currentMonthIndex.value]);
 
-    return { currentMonth, months: daysByMonths, currentYear };
+    const prevMonthEnabled = computed(() => currentMonthIndex.value > 0);
+    const nextMonthEnabled = computed(() => currentMonthIndex.value < (daysByMonths.length - 1));
+    function nextMonth () {
+      if (nextMonthEnabled.value) {
+        currentMonthIndex.value += 1;
+      }
+    }
+    function prevMonth () {
+      if (prevMonthEnabled.value) {
+        currentMonthIndex.value -= 1;
+      }
+    }
+
+    return { currentMonth, months: daysByMonths, nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled };
   }
 
   return {
