@@ -82,7 +82,10 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
   }
 
   function hoverMultiple(hoveredDate: CalendarDate) {
-    if (selectedDates.value.length !== 1) { return; }
+    if (
+      selectedDates.value.length !== 1
+      || hoveredDate.otherMonth
+    ) { return; }
 
     hoveredDates.value.forEach((day) => {
       day.isHovered.value = false;

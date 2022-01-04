@@ -1,15 +1,15 @@
 <template>
-  <MonthCalendar />
+  <Calendar />
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import MonthCalendar from './components/MonthCalendar.vue';
+import Calendar from './components/Calendar.vue';
 
 export default defineComponent({
   name: 'App',
   components: {
-    MonthCalendar,
+    Calendar,
   },
 });
 </script>
