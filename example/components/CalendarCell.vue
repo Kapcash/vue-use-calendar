@@ -11,6 +11,7 @@
         active: props.day.isSelected.value,
         hover: props.day.isHovered.value,
         between: props.day.isBetween.value,
+        today: props.day.isToday,
       }"
       :disabled="props.day.disabled.value"
       @click="$emit('click')"
@@ -50,19 +51,22 @@ button:not(:disabled):hover {
   cursor: pointer;
   background-color: hsl(0, 0%, 98%);
 }
+button.today {
+  background-color: rgb(255, 200, 237);
+}
 button.light {
   background-color: lightgoldenrodyellow;
 }
-button.hover {
+button:not(:disabled).hover {
   background-color: hsl(157, 75%, 78%);
 }
-button.hover:hover {
+button.hover:not(:disabled):hover {
   background-color: hsl(157, 47%, 66%);
 }
-button.between {
+button:not(:disabled).between {
   background-color: hsl(36, 75%, 78%);
 }
-button.between:hover {
+button.between:not(:disabled):hover {
   background-color: hsl(36, 47%, 66%);
 }
 button.active {

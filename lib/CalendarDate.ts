@@ -1,3 +1,4 @@
+import { isToday } from "date-fns";
 import { Ref, ref } from "vue";
 
 export class CalendarDate {
@@ -8,6 +9,9 @@ export class CalendarDate {
   isBetween: Ref<boolean> = ref(false);
   isHovered: Ref<boolean> = ref(false);
 
+  isToday: boolean;
+  isWeekend: boolean;
+
   constructor ();
   constructor (date: Date);
   constructor (value: number | string);
@@ -16,11 +20,10 @@ export class CalendarDate {
   constructor (...args: any[]) {
     // @ts-ignores
     this.date = new Date(...args);
-  }
-
-  get weekend (): boolean {
+    this.isToday = isToday(this.date);
+    
     const weekDay = this.date.getDay();
-    return weekDay === 0 || weekDay > 6;
+    this.isWeekend = weekDay === 0 || weekDay > 6;
   }
 
   get monthYearIndex (): number {

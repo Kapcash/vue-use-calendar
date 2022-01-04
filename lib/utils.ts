@@ -1,4 +1,4 @@
-import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek } from "date-fns";
+import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isFirstDayOfMonth, startOfMonth, isLastDayOfMonth, endOfMonth } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
 import { FirstDayOfWeek, Month } from "./types";
 
@@ -36,6 +36,15 @@ export function getBetweenDays (days: CalendarDate[], first: CalendarDate, secon
 export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0) {
   const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
   const wrap: Month[] = [];
+  
+  const firstDay = days[0];
+  const lastDay = days[days.length - 1];
+  if (!isFirstDayOfMonth(firstDay.date)) {
+    days.unshift(...generateDays(startOfMonth(firstDay.date), firstDay.date).slice(0, -1));
+  }
+  if (!isLastDayOfMonth(lastDay.date)) {
+    days.push(...generateDays(lastDay.date, endOfMonth(lastDay.date)).slice(1));
+  }
 
   allMonthYearsIndex.forEach((monthYear) => {
     const monthFirstDayIndex = days.findIndex(day => day.monthYearIndex === monthYear);
@@ -52,7 +61,7 @@ export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false,
         day.disabled.value = true;
         day.otherMonth = true;
       });
-      monthDays.unshift(...beforeDays.slice(0, beforeDays.length - 1));
+      monthDays.unshift(...beforeDays.slice(0, -1));
       
       const afterFrom = monthDays[monthDays.length - 1];
       const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
