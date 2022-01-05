@@ -59,7 +59,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar
   preSelection: [addDays(new Date(), 5)],
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar();
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar({ infinite: true });
 
 const weekdays = useWeekdays();
 </script>

@@ -7,7 +7,7 @@ export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface CalendarComposables {
   useWeekdays: () => WeekdaysComposable;
-  useMonthlyCalendar: () => MonthlyCalendarComposable;
+  useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
   [key: string]: any;
 }
@@ -18,6 +18,11 @@ export interface CalendarOptions {
   disabled: Array<DateInput>;
   firstDayOfWeek: FirstDayOfWeek;
   preSelection?: Array<Date> | Date;
+}
+
+export interface MontlyOptions {
+  infinite?: boolean;
+  otherMonthDays?: boolean;
 }
 
 export type Month = {

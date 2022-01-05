@@ -1,4 +1,4 @@
-import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isFirstDayOfMonth, startOfMonth, isLastDayOfMonth, endOfMonth } from "date-fns";
+import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isFirstDayOfMonth, startOfMonth, isLastDayOfMonth, endOfMonth, daysToWeeks } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
 import { FirstDayOfWeek, Month } from "./types";
 
@@ -33,7 +33,7 @@ export function getBetweenDays (days: CalendarDate[], first: CalendarDate, secon
  * @param days Sorted array of CalendarDate
  * @returns Array of months including the month, year and array of CalendarDate for that month
  */
-export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0) {
+export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month[] {
   const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
   const wrap: Month[] = [];
   
@@ -52,25 +52,9 @@ export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false,
     // Next month first day not found -> is the last month
     const monthLastDayIndex = nextMonthFirstDayIndex >= 0 ? nextMonthFirstDayIndex : days.length;
     const monthDays = days.slice(monthFirstDayIndex, monthLastDayIndex);
-
+    
     if (otherMonthsDays) {
-      const beforeFrom = startOfWeek(monthDays[0]?.date, { weekStartsOn: firstDayOfWeek });
-      const beforeTo = monthDays[0];
-      const beforeDays = generateDays(beforeFrom, beforeTo.date);
-      beforeDays.forEach(day => {
-        day.disabled.value = true;
-        day.otherMonth = true;
-      });
-      monthDays.unshift(...beforeDays.slice(0, -1));
-      
-      const afterFrom = monthDays[monthDays.length - 1];
-      const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
-      const afterDays = generateDays(afterFrom!.date, afterTo);
-      afterDays.forEach(day => {
-        day.disabled.value = true;
-        day.otherMonth = true;
-      });
-      monthDays.push(...afterDays.slice(1));
+      generateOtherMonthDays(monthDays, firstDayOfWeek);
     }
 
     wrap.push({
@@ -82,6 +66,44 @@ export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false,
   return wrap;
 }
 
+function generateOtherMonthDays (monthDays: CalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
+  const beforeFrom = startOfWeek(monthDays[0]?.date, { weekStartsOn: firstDayOfWeek });
+  const beforeTo = monthDays[0];
+  const beforeDays = generateDays(beforeFrom, beforeTo.date);
+  beforeDays.forEach(day => {
+    day.disabled.value = true;
+    day.otherMonth = true;
+  });
+  monthDays.unshift(...beforeDays.slice(0, -1));
+  
+  const afterFrom = monthDays[monthDays.length - 1];
+  const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
+  const afterDays = generateDays(afterFrom!.date, afterTo);
+  afterDays.forEach(day => {
+    day.disabled.value = true;
+    day.otherMonth = true;
+  });
+  monthDays.push(...afterDays.slice(1));
+}
+
+export function generateMonth (monthYear: number, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month {
+  const newMonth: Month = {
+    year: CalendarDate.yearFromMonthYear(monthYear),
+    month: CalendarDate.monthFromMonthYear(monthYear),
+    days: [],
+  };
+  const monthRefDay = new Date(newMonth.year, newMonth.month);
+  const monthDays: CalendarDate[] = generateDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay));
+
+  if (otherMonthsDays) {
+    generateOtherMonthDays(monthDays, firstDayOfWeek);
+  }
+
+  newMonth.days = monthDays;
+  return newMonth;
+}
+
 export function wrapByWeek (days: Array<CalendarDate>) {
+  // TODO implement
   return [];
 }

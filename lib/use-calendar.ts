@@ -1,8 +1,8 @@
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref } from "vue";
 import { isSameDay, lastDayOfMonth } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
-import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, Month } from './types';
-import { generateDays, getBetweenDays, wrapByMonth } from "./utils";
+import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, Month, MontlyOptions, FirstDayOfWeek } from './types';
+import { generateDays, generateMonth, getBetweenDays, wrapByMonth } from "./utils";
 
 function useWeekdays ({ firstDayOfWeek }: CalendarOptions): () => WeekdaysComposable {
   return (): Array<string> => {
@@ -27,6 +27,11 @@ function useWeeklyCalendar ({ from, to, disabled }: CalendarOptions): () => Week
     return { currentWeek: null, weeks: [] };
   };
 }
+
+const DEFAULT_MONTLY_OPTS: MontlyOptions = {
+  infinite: false,
+  otherMonthDays: true,
+};
 
 export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
   const fromDate = new Date(globalOptions.from);
@@ -103,19 +108,42 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     });
   }
 
-  function useMonthlyCalendar(otherMonthsDays = true): MonthlyCalendarComposable {
-    const daysByMonths = wrapByMonth(days, otherMonthsDays, globalOptions.firstDayOfWeek);
+  function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable {
+    const { infinite, otherMonthDays } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
+    const daysByMonths = wrapByMonth(days, otherMonthDays, globalOptions.firstDayOfWeek);
     const currentMonthIndex = ref(0);
-    const currentMonth = computed(() => daysByMonths[currentMonthIndex.value]);
 
-    const prevMonthEnabled = computed(() => currentMonthIndex.value > 0);
-    const nextMonthEnabled = computed(() => currentMonthIndex.value < (daysByMonths.length - 1));
+    const currentMonth = computed(() => daysByMonths[currentMonthIndex.value]);
+    const prevMonthEnabled = computed(() => infinite || currentMonthIndex.value > 0);
+    const nextMonthEnabled = computed(() => infinite || currentMonthIndex.value < (daysByMonths.length - 1));
+
     function nextMonth () {
+      if (infinite) {
+        const nextMonth = daysByMonths[currentMonthIndex.value + 1];
+        if (!nextMonth) {
+          const nextMonthYear = currentMonth.value.days[10].monthYearIndex + 1;
+          const nextMonth = generateMonth(nextMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
+          days.push(...nextMonth.days);
+          daysByMonths.push(nextMonth);
+        }
+      }
       if (nextMonthEnabled.value) {
         currentMonthIndex.value += 1;
       }
     }
+
     function prevMonth () {
+      if (infinite) {
+        const prevMonth = daysByMonths[currentMonthIndex.value - 1];
+        if (!prevMonth) {
+          const prevMonthYear = currentMonth.value.days[10].monthYearIndex - 1;
+          const prevMonth = generateMonth(prevMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
+          days.unshift(...prevMonth.days);
+          daysByMonths.unshift(prevMonth);
+          currentMonthIndex.value += 1;
+        }
+      }
+
       if (prevMonthEnabled.value) {
         currentMonthIndex.value -= 1;
       }
