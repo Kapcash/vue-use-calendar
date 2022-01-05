@@ -1,3 +1,4 @@
+import { ShallowReactive, shallowReactive, ShallowRef, shallowRef } from "@vue/runtime-core";
 import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, isFirstDayOfMonth, startOfMonth, isLastDayOfMonth, endOfMonth, daysToWeeks } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
 import { FirstDayOfWeek, Month } from "./types";
@@ -33,19 +34,10 @@ export function getBetweenDays (days: CalendarDate[], first: CalendarDate, secon
  * @param days Sorted array of CalendarDate
  * @returns Array of months including the month, year and array of CalendarDate for that month
  */
-export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month[] {
+export function wrapByMonth (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): ShallowReactive<Month[]> {
   const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
-  const wrap: Month[] = [];
+  const wrap: ShallowReactive<Month[]> = shallowReactive([]);
   
-  const firstDay = days[0];
-  const lastDay = days[days.length - 1];
-  if (!isFirstDayOfMonth(firstDay.date)) {
-    days.unshift(...generateDays(startOfMonth(firstDay.date), firstDay.date).slice(0, -1));
-  }
-  if (!isLastDayOfMonth(lastDay.date)) {
-    days.push(...generateDays(lastDay.date, endOfMonth(lastDay.date)).slice(1));
-  }
-
   allMonthYearsIndex.forEach((monthYear) => {
     const monthFirstDayIndex = days.findIndex(day => day.monthYearIndex === monthYear);
     const nextMonthFirstDayIndex = days.findIndex(day => day.monthYearIndex === (monthYear + 1));

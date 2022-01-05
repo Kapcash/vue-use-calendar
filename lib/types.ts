@@ -1,4 +1,4 @@
-import { ComputedRef, ShallowRef } from "vue";
+import { ComputedRef, ShallowReactive, ShallowRef } from "vue";
 import { CalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string;
@@ -34,7 +34,7 @@ export type Week = Array<CalendarDate>;
 
 export interface MonthlyCalendarComposable {
   currentMonth: ShallowRef<Month>;
-  months: Array<Month>;
+  months: ShallowReactive<Month[]>;
   nextMonth: () => void;
   prevMonth: () => void;
   nextMonthEnabled: ComputedRef<boolean>;

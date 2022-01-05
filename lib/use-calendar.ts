@@ -1,7 +1,7 @@
-import { computed, ref } from "vue";
-import { isSameDay, lastDayOfMonth } from "date-fns";
+import { computed, ComputedRef, ref, ShallowReactive, shallowReactive, shallowRef, ShallowRef } from "vue";
+import { isSameDay, lastDayOfMonth, startOfMonth, endOfMonth } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
-import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, Month, MontlyOptions, FirstDayOfWeek } from './types';
+import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, MontlyOptions } from './types';
 import { generateDays, generateMonth, getBetweenDays, wrapByMonth } from "./utils";
 
 function useWeekdays ({ firstDayOfWeek }: CalendarOptions): () => WeekdaysComposable {
@@ -34,23 +34,23 @@ const DEFAULT_MONTLY_OPTS: MontlyOptions = {
 };
 
 export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
-  const fromDate = new Date(globalOptions.from);
-  const toDate = globalOptions.to ? new Date(globalOptions.to) : lastDayOfMonth(fromDate);
-  const disabledDates = globalOptions.disabled.map(dis => new Date(dis));
-  const preSelectedDate = Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection];
+  const fromDate: Date = new Date(globalOptions.from);
+  const toDate: Date = globalOptions.to ? new Date(globalOptions.to) : lastDayOfMonth(fromDate);
+  const disabledDates: Date[] = globalOptions.disabled.map(dis => new Date(dis));
+  const preSelectedDate: Date[] = (Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection]).filter(Boolean) as Array<Date>;
 
-  const days = generateDays(fromDate, toDate, disabledDates, preSelectedDate.filter(Boolean) as Array<Date>);
+  let days: ComputedRef<CalendarDate[]> = computed(() => []);
 
   const selectedDates = computed(() => {
-    return days.filter(day => day.isSelected.value);
+    return days.value.filter(day => day.isSelected.value);
   });
 
   const hoveredDates = computed(() => {
-    return days.filter(day => day.isHovered.value);
+    return days.value.filter(day => day.isHovered.value);
   });
 
   const betweenDates = computed(() => {
-    return days.filter(day => day.isBetween.value);
+    return days.value.filter(day => day.isBetween.value);
   });
 
   function selectSingleDate(clickedDate: CalendarDate) {
@@ -76,7 +76,7 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     }
 
     if (selection.length === 1) {
-      getBetweenDays(days, selection[0], clickedDate).forEach(day => {
+      getBetweenDays(days.value, selection[0], clickedDate).forEach(day => {
         day.isBetween.value = true;
       });
     }
@@ -95,7 +95,7 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     hoveredDates.value.forEach((day) => {
       day.isHovered.value = false;
     });
-    const betweenDates = getBetweenDays(days, selectedDates.value[0], hoveredDate);
+    const betweenDates = getBetweenDays(days.value, selectedDates.value[0], hoveredDate);
 
     betweenDates.forEach(day => {
       day.isHovered.value = true;
@@ -110,7 +110,13 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
 
   function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable {
     const { infinite, otherMonthDays } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
-    const daysByMonths = wrapByMonth(days, otherMonthDays, globalOptions.firstDayOfWeek);
+
+    const monthlyDays = generateDays(startOfMonth(fromDate), endOfMonth(toDate), disabledDates, preSelectedDate);
+    const daysByMonths = wrapByMonth(monthlyDays, otherMonthDays, globalOptions.firstDayOfWeek);
+    days = computed(() => {
+      return daysByMonths.flatMap(month => month.days);
+    });
+
     const currentMonthIndex = ref(0);
 
     const currentMonth = computed(() => daysByMonths[currentMonthIndex.value]);
@@ -123,7 +129,6 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
         if (!nextMonth) {
           const nextMonthYear = currentMonth.value.days[10].monthYearIndex + 1;
           const nextMonth = generateMonth(nextMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
-          days.push(...nextMonth.days);
           daysByMonths.push(nextMonth);
         }
       }
@@ -138,7 +143,6 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
         if (!prevMonth) {
           const prevMonthYear = currentMonth.value.days[10].monthYearIndex - 1;
           const prevMonth = generateMonth(prevMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
-          days.unshift(...prevMonth.days);
           daysByMonths.unshift(prevMonth);
           currentMonthIndex.value += 1;
         }
