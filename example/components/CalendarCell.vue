@@ -70,7 +70,7 @@ button.between:not(:disabled):hover {
   background-color: hsl(36, 47%, 66%);
 }
 button.active {
-  background-color: hsl(248, 53%, 58%);
+  background-color: hsl(248, 53%, 58%) !important;
 }
 button.active:hover {
   background-color: hsl(248, 73%, 73%);

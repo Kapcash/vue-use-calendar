@@ -1,15 +1,20 @@
 <template>
-  <MonthCalendar />
+  <div class="line">
+    <DatePicker />
+    <MonthCalendar />
+  </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import DatePicker from './components/DatePicker.vue';
 import MonthCalendar from './components/MonthCalendar.vue';
 
 export default defineComponent({
   name: 'App',
   components: {
     MonthCalendar,
+    DatePicker,
   },
 });
 </script>
@@ -22,5 +27,11 @@ export default defineComponent({
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+
+.line {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
 }
 </style>

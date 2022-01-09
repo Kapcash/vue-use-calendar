@@ -9,7 +9,14 @@ export interface CalendarComposables {
   useWeekdays: () => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
-  [key: string]: any;
+  selectedDates: ComputedRef<Array<CalendarDate>>;
+  listeners: {
+    selectSingle: (clickedDate: CalendarDate) => void;
+    selectMultiple: (clickedDate: CalendarDate) => void;
+    selectRange: (clickedDate: CalendarDate) => void;
+    hoverMultiple: (clickedDate: CalendarDate) => void;
+    resetHover: () => void;
+  };
 }
 
 export interface CalendarOptions {

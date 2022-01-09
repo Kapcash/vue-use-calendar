@@ -1,7 +1,8 @@
 <template>
-  <div class="calendar">
-    <div v-if="selectedDate">
-      Selection: {{ selectedDate?.date }}
+  <div class="date-picker">
+    <h2>Date picker example</h2>
+    <div v-if="selectedDates.length > 0">
+      Selection: {{ selectedDates?.[0]?.date }}
     </div>
     <div>Current month: {{ currentMonth.month + 1 }} - {{ currentMonth.year }}</div>
     <div class="weeknames grid">
@@ -10,6 +11,7 @@
         :key="weekday"
       >{{ weekday }}</span>
     </div>
+
     <div
       v-for="month of months"
       :key="month.month + month.year"
@@ -21,9 +23,8 @@
           v-for="day of month.days"
           :key="day.dayId"
           :day="day"
-          @click="listeners.selectRange(day)"
-          @mouseover="listeners.hoverMultiple(day)"
-          @mouseleave="listeners.resetHover(day)"
+          @click="listeners.selectSingle(day)"
+          @mouseleave="listeners.resetHover()"
         />
       </div>
     </div>
@@ -35,16 +36,17 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays, addMonths } from 'date-fns';
 
-const disabledDates = [addDays(new Date(), 10)];
+const disabledDates = [addDays(new Date(), 3)];
+const preselectionDates = [addDays(new Date(), 5)];
 
 const firstDayOfWeek = 1;
 
-const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar({
+const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
-  preSelection: [addDays(new Date(), 5)],
+  preSelection: preselectionDates,
 });
 
 const { months, currentMonth } = useMonthlyCalendar();
@@ -53,7 +55,7 @@ const weekdays = useWeekdays();
 </script>
 
 <style scoped>
-.calendar {
+.date-picker {
   display: flex;
   flex-direction: column;
   align-items: center;

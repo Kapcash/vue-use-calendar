@@ -1,10 +1,15 @@
 <template>
   <div class="calendar">
-    <div v-if="selectedDate">
-      Selection: {{ selectedDate?.date }}
+    <h2>Monthly calendar picker example</h2>
+    Selection: 
+    <div 
+      v-for="selected of selectedDates"
+      :key="selected.dayId"
+    >
+      {{ selected.date }}
     </div>
-    <div>Current month: {{ currentMonth.month + 1 }} - {{ currentMonth.year }}</div>
-    <div lass="month">
+
+    <div class="month">
       <span class="actions">
         <button
           :disabled="!prevMonthEnabled"
@@ -35,7 +40,7 @@
           :day="day"
           @click="listeners.selectRange(day)"
           @mouseover="listeners.hoverMultiple(day)"
-          @mouseleave="listeners.resetHover(day)"
+          @mouseleave="listeners.resetHover()"
         />
       </div>
     </div>
@@ -51,12 +56,12 @@ const disabledDates = [addDays(new Date(), 10)];
 
 const firstDayOfWeek = 1;
 
-const { useMonthlyCalendar, useWeekdays, listeners, selectedDate } = useCalendar({
+const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
-  preSelection: [addDays(new Date(), 5)],
+  preSelection: [new Date(), addDays(new Date(), 6)],
 });
 
 const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar({ infinite: true });
