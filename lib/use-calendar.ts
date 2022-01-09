@@ -1,16 +1,20 @@
-import { computed, ComputedRef, ref, ShallowReactive, shallowReactive, shallowRef, ShallowRef } from "vue";
-import { isSameDay, lastDayOfMonth, startOfMonth, endOfMonth } from "date-fns";
+import { computed, ComputedRef, ref } from "vue";
+import { lastDayOfMonth, startOfMonth, endOfMonth, nextSunday, addDays, format } from "date-fns";
 import { CalendarDate } from "./CalendarDate";
-import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, MontlyOptions } from './types';
+import { CalendarOptions, WeekdaysComposable, MonthlyCalendarComposable, CalendarComposables, WeeklyCalendarComposable, MontlyOptions, WeekdayInputFormat } from './types';
 import { generateDays, generateMonth, getBetweenDays, wrapByMonth } from "./utils";
 
-function useWeekdays ({ firstDayOfWeek }: CalendarOptions): () => WeekdaysComposable {
-  return (): Array<string> => {
-    const weekdays = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+function useWeekdays ({ firstDayOfWeek, locale }: CalendarOptions): (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable {
+  return (weekdayFormat: WeekdayInputFormat = 'iiiii'): Array<string> => {
+    const sunday = nextSunday(new Date());
+    const weekdays = Array.from(Array(7).keys()).map(i => addDays(sunday, i));
+
+    // Shift the array by `firstDayOfWeek` times to start on the desired day
     Array.from(Array(firstDayOfWeek)).forEach(() => {
       weekdays.push(weekdays.shift()!);
     });
-    return weekdays;
+
+    return weekdays.map(day => format(day, weekdayFormat, { locale }));
   };
 }
 

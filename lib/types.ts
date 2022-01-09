@@ -1,12 +1,13 @@
+import { Locale } from "date-fns";
 import { ComputedRef, ShallowReactive, ShallowRef } from "vue";
 import { CalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-
+export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
 
 export interface CalendarComposables {
-  useWeekdays: () => WeekdaysComposable;
+  useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
   selectedDates: ComputedRef<Array<CalendarDate>>;
@@ -24,6 +25,7 @@ export interface CalendarOptions {
   to?: DateInput;
   disabled: Array<DateInput>;
   firstDayOfWeek: FirstDayOfWeek;
+  locale?: Locale;
   preSelection?: Array<Date> | Date;
 }
 
