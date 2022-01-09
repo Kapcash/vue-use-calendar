@@ -26,7 +26,7 @@ export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array
 export function getBetweenDays (days: CalendarDate[], first: CalendarDate, second: CalendarDate) {
   const firstSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, first.date));
   const currentSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, second.date));
-  return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex, currentSelectedDayIndex + 1) : days.slice(currentSelectedDayIndex, firstSelectedDayIndex + 1);
+  return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex + 1, currentSelectedDayIndex) : days.slice(currentSelectedDayIndex + 1, firstSelectedDayIndex);
 }
 
 /**

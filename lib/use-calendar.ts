@@ -61,25 +61,23 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
   }
 
   function selectRangeDates(clickedDate: CalendarDate) {
-    const selection = selectedDates.value;
-
     betweenDates.value.forEach(day => {
       day.isBetween.value = false;
     });
     
-    clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    
-    if (selection.length >= 2 && !selection.some(day => isSameDay(day.date, clickedDate.date))) {
-      selection.forEach((day) => {
+    if (selectedDates.value.length >= 2 && !clickedDate.isSelected.value) {
+      selectedDates.value.forEach((day) => {
         day.isSelected.value = false;
       });
     }
-
-    if (selection.length === 1) {
-      getBetweenDays(days.value, selection[0], clickedDate).forEach(day => {
+    
+    if (selectedDates.value.length === 1) {
+      getBetweenDays(days.value, selectedDates.value[0], clickedDate).forEach(day => {
         day.isBetween.value = true;
       });
     }
+    
+    clickedDate.isSelected.value = !clickedDate.isSelected.value;
   }
 
   function selectMultipleDates(clickedDate: CalendarDate) {
@@ -95,11 +93,12 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     hoveredDates.value.forEach((day) => {
       day.isHovered.value = false;
     });
+    
     const betweenDates = getBetweenDays(days.value, selectedDates.value[0], hoveredDate);
-
     betweenDates.forEach(day => {
       day.isHovered.value = true;
     });
+    hoveredDate.isHovered.value = true;
   }
 
   function resetHover() {
