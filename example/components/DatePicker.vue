@@ -35,6 +35,7 @@
 import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays, addMonths } from 'date-fns';
+import { CustomDate } from './CustomDate';
 
 const disabledDates = [addDays(new Date(), 3)];
 const preselectionDates = [addDays(new Date(), 5)];
@@ -47,6 +48,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalenda
   disabled: disabledDates,
   firstDayOfWeek,
   preSelection: preselectionDates,
+  calendarClass: CustomDate,
 });
 
 const { months, currentMonth } = useMonthlyCalendar();

@@ -2,6 +2,7 @@
   <div class="line">
     <DatePicker />
     <MonthCalendar />
+    <OverrideDateCalendar />
   </div>
 </template>
 
@@ -9,11 +10,13 @@
 import { defineComponent } from 'vue';
 import DatePicker from './components/DatePicker.vue';
 import MonthCalendar from './components/MonthCalendar.vue';
+import OverrideDateCalendar from './components/OverrideDateCalendar.vue';
 
 export default defineComponent({
   name: 'App',
   components: {
     MonthCalendar,
+    OverrideDateCalendar,
     DatePicker,
   },
 });

@@ -54,9 +54,16 @@ import { addDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CustomDate } from './CustomDate';
 
+
 const disabledDates = [addDays(new Date(), 10)];
 
 const firstDayOfWeek = 1;
+
+
+const pricesByDay = [
+  { day: '22/01/2022', price: 10 },
+  { day: '24/01/2022', price: 99 },
+];
 
 const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar({
   from: new Date(),
@@ -65,10 +72,22 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalenda
   firstDayOfWeek,
   locale: fr,
   preSelection: [new Date(), addDays(new Date(), 6)],
-  calendarClass: CustomDate,
+  calendarClass: new CustomDate(),
+  factory: (...args: any[]) => {
+    const calendarDate = new CustomDate(...args);
+    const priceObj = pricesByDay.find(price => price.day === calendarDate.date.toLocaleDateString());
+    calendarDate.setPrice(priceObj?.price || 0);
+    return calendarDate;
+  },
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days } = useMonthlyCalendar({ infinite: true });
+
+const t = days.value[0];
+
+// days.value.forEach((day) => {
+//   day.price
+// });
 
 const weekdays = useWeekdays();
 </script>

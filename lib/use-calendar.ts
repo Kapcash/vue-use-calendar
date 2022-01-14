@@ -18,14 +18,14 @@ function useWeekdays ({ firstDayOfWeek, locale }: CalendarOptions): (weekdayForm
   };
 }
 
-function useWeeklyCalendar ({ from, to, disabled }: CalendarOptions): () => WeeklyCalendarComposable {
+function useWeeklyCalendar ({ from, to, disabled, calendarClass }: CalendarOptions): () => WeeklyCalendarComposable {
   // TODO Implement
   return () => {
     const fromDate = new Date(from);
     const toDate = to ? new Date(to) : lastDayOfMonth(fromDate);
     // const currentWeek = ref(getWeek(fromDate))
 
-    const days = generateDays(fromDate, toDate);
+    // const days = generateDays(fromDate, toDate, calendarClass, undefined, undefined);
     // const daysByMonths = wrapByWeek(days)
 
     return { currentWeek: null, weeks: [] };
@@ -38,10 +38,11 @@ const DEFAULT_MONTLY_OPTS: MontlyOptions = {
 };
 
 export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
+  const factory = globalOptions.factory || ((...args: any[]) => new CalendarDate(...args));
   const fromDate: Date = new Date(globalOptions.from);
   const toDate: Date = globalOptions.to ? new Date(globalOptions.to) : lastDayOfMonth(fromDate);
   const disabledDates: Date[] = globalOptions.disabled.map(dis => new Date(dis));
-  const preSelectedDate: Date[] = (Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection]).filter(Boolean) as Array<Date>;
+  const preSelectedDates: Date[] = (Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection]).filter(Boolean) as Array<Date>;
 
   let days: ComputedRef<CalendarDate[]> = computed(() => []);
 
@@ -111,11 +112,11 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     });
   }
 
-  function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable {
+  function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable<C> {
     const { infinite, otherMonthDays } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
 
-    const monthlyDays = generateDays(startOfMonth(fromDate), endOfMonth(toDate), disabledDates, preSelectedDate);
-    const daysByMonths = wrapByMonth(monthlyDays, otherMonthDays, globalOptions.firstDayOfWeek);
+    const monthlyDays = generateDays(startOfMonth(fromDate), endOfMonth(toDate), factory, disabledDates, preSelectedDates);
+    const daysByMonths = wrapByMonth(monthlyDays, otherMonthDays, globalOptions.firstDayOfWeek, factory);
     days = computed(() => {
       return daysByMonths.flatMap(month => month.days);
     });
@@ -131,7 +132,7 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
         const nextMonth = daysByMonths[currentMonthIndex.value + 1];
         if (!nextMonth) {
           const nextMonthYear = currentMonth.value.days[10].monthYearIndex + 1;
-          const nextMonth = generateMonth(nextMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
+          const nextMonth = generateMonth(nextMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek, factory);
           daysByMonths.push(nextMonth);
         }
       }
@@ -145,7 +146,7 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
         const prevMonth = daysByMonths[currentMonthIndex.value - 1];
         if (!prevMonth) {
           const prevMonthYear = currentMonth.value.days[10].monthYearIndex - 1;
-          const prevMonth = generateMonth(prevMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek);
+          const prevMonth = generateMonth(prevMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek, factory);
           daysByMonths.unshift(prevMonth);
           currentMonthIndex.value += 1;
         }
@@ -156,7 +157,7 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
       }
     }
 
-    return { currentMonth, months: daysByMonths, nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled };
+    return { currentMonth, months: daysByMonths, days, nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled };
   }
 
   return {

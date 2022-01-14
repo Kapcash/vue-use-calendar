@@ -15,10 +15,10 @@ export class CalendarDate {
   constructor ();
   constructor (date: Date);
   constructor (value: number | string);
-  constructor (year: number, month: number, date?: number, hours?: number, minutes?: number, seconds?: number, ms?: number);
+  constructor (...args: number[]);
 
   constructor (...args: any[]) {
-    // @ts-ignores
+    // @ts-ignore
     this.date = new Date(...args);
     this.isToday = isToday(this.date);
     
