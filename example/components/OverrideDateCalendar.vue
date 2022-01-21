@@ -49,7 +49,9 @@
 
 <script lang="ts" setup>
 import CalendarCell from './CalendarCell.vue';
+import { CustomDate } from './CustomDate';
 import { useCalendar } from '../../lib/use-calendar';
+import { ICalendarDate } from '../../lib/CalendarDate';
 import { addDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -62,18 +64,26 @@ const pricesByDay = [
   { day: '24/01/2022', price: 99 },
 ];
 
-const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar({
+const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar<CustomDate>({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
   preSelection: [new Date(), addDays(new Date(), 6)],
+  factory: (calendarDate: ICalendarDate) => {
+    const priceObj = pricesByDay.find(price => price.day === calendarDate.date.toLocaleDateString());
+    return {
+      ...calendarDate,
+      price: priceObj?.price || 0,
+    };
+  },
 });
 
 const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days } = useMonthlyCalendar({ infinite: true });
 
 const t = days.value[0];
+console.log(t.price);
 
 // days.value.forEach((day) => {
 //   day.price

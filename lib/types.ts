@@ -6,9 +6,9 @@ type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
 
-export interface CalendarComposables {
+export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
-  useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable;
+  useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
   selectedDates: ComputedRef<Array<ICalendarDate>>;
   listeners: {
@@ -20,13 +20,14 @@ export interface CalendarComposables {
   };
 }
 
-export interface CalendarOptions {
+export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
   from: DateInput;
   to?: DateInput;
   disabled: Array<DateInput>;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
   preSelection?: Array<Date> | Date;
+  factory?: (date: ICalendarDate) => C;
 }
 
 export interface MontlyOptions {
@@ -41,12 +42,12 @@ export type Month = {
 };
 export type Week = Array<ICalendarDate>;
 
-export interface MonthlyCalendarComposable {
+export interface MonthlyCalendarComposable<C extends ICalendarDate> {
   currentMonth: ShallowRef<Month>;
   months: ShallowReactive<Month[]>;
   nextMonth: () => void;
   prevMonth: () => void;
-  days: ComputedRef<Array<ICalendarDate>>;
+  days: ComputedRef<Array<C>>;
   nextMonthEnabled: ComputedRef<boolean>;
   prevMonthEnabled: ComputedRef<boolean>;
 }

@@ -37,13 +37,13 @@ const DEFAULT_MONTLY_OPTS: MontlyOptions = {
   otherMonthDays: true,
 };
 
-export function useCalendar (globalOptions: CalendarOptions): CalendarComposables {
+export function useCalendar<C extends ICalendarDate> (globalOptions: CalendarOptions<C>): CalendarComposables<C> {
   const fromDate: Date = new Date(globalOptions.from);
   const toDate: Date = globalOptions.to ? new Date(globalOptions.to) : lastDayOfMonth(fromDate);
   const disabledDates: Date[] = globalOptions.disabled.map(dis => new Date(dis));
   const preSelectedDates: Date[] = (Array.isArray(globalOptions.preSelection) ? globalOptions.preSelection : [globalOptions.preSelection]).filter(Boolean) as Array<Date>;
 
-  let days: ComputedRef<ICalendarDate[]> = computed(() => []);
+  let days: ComputedRef<C[]> = computed(() => []);
 
   const selectedDates = computed(() => {
     return days.value.filter(day => day.isSelected.value);
@@ -111,13 +111,16 @@ export function useCalendar (globalOptions: CalendarOptions): CalendarComposable
     });
   }
 
-  function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable {
+  function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable<C> {
     const { infinite, otherMonthDays } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
 
-    const monthlyDays = generateDays(startOfMonth(fromDate), endOfMonth(toDate), disabledDates, preSelectedDates);
+    let monthlyDays = generateDays(startOfMonth(fromDate), endOfMonth(toDate), disabledDates, preSelectedDates);
+    if (globalOptions.factory) {
+      monthlyDays = monthlyDays.map(globalOptions.factory);
+    }
     const daysByMonths = wrapByMonth(monthlyDays, otherMonthDays, globalOptions.firstDayOfWeek);
     days = computed(() => {
-      return daysByMonths.flatMap(month => month.days);
+      return daysByMonths.flatMap(month => month.days) as C[];
     });
 
     const currentMonthIndex = ref(0);
