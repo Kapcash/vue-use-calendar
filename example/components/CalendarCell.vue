@@ -23,10 +23,10 @@
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { CalendarDate } from '../../lib/CalendarDate';
+import { ICalendarDate } from '../../lib/CalendarDate';
 
 const props = defineProps({
-  day: { type: Object as PropType<CalendarDate>, required: true },
+  day: { type: Object as PropType<ICalendarDate>, required: true },
 });
 
 defineEmits({

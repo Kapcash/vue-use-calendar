@@ -1,12 +1,12 @@
 import { ShallowReactive, shallowReactive } from "@vue/runtime-core";
 import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { CalendarDate } from "./CalendarDate";
-import { CalendarFactory, Constructor, FirstDayOfWeek, Month } from "./types";
+import { ICalendarDate, calendarFactory, monthFromMonthYear, yearFromMonthYear } from "./CalendarDate";
+import { FirstDayOfWeek, Month } from "./types";
 
-export function generateDays<C extends CalendarDate = CalendarDate> (fromDate: Date, toDate: Date, CalendarClass: CalendarFactory<C>, disabledDates: Array<Date> = [], preSelection: Array<Date> = []): Array<C> {
+export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date> = [], preSelection: Array<Date> = []): Array<ICalendarDate> {
   fromDate.setHours(0, 0, 0, 0);
   toDate.setHours(0, 0, 0, 0);
-  const dates: Array<C> = [CalendarClass(fromDate)];
+  const dates: Array<ICalendarDate> = [calendarFactory(fromDate)];
   let dayIndex = fromDate.getDate() + 1;
 
   if (isAfter(fromDate, toDate)) {
@@ -14,7 +14,7 @@ export function generateDays<C extends CalendarDate = CalendarDate> (fromDate: D
   }
 
   while (isBefore(dates[dates.length - 1]?.date || 0, toDate)) {
-    const date = CalendarClass(fromDate.getFullYear(), fromDate.getMonth(), dayIndex++);
+    const date = calendarFactory(fromDate.getFullYear(), fromDate.getMonth(), dayIndex++);
     date.disabled.value = !!disabledDates.find(disabled => isSameDay(date.date, disabled) );
     date.isSelected.value = !!preSelection.find(selected => isSameDay(date.date, selected) );
     dates.push(date);
@@ -23,7 +23,7 @@ export function generateDays<C extends CalendarDate = CalendarDate> (fromDate: D
   return dates;
 }
 
-export function getBetweenDays (days: CalendarDate[], first: CalendarDate, second: CalendarDate) {
+export function getBetweenDays (days: ICalendarDate[], first: ICalendarDate, second: ICalendarDate) {
   const firstSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, first.date));
   const currentSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, second.date));
   return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex + 1, currentSelectedDayIndex) : days.slice(currentSelectedDayIndex + 1, firstSelectedDayIndex);
@@ -34,7 +34,7 @@ export function getBetweenDays (days: CalendarDate[], first: CalendarDate, secon
  * @param days Sorted array of CalendarDate
  * @returns Array of months including the month, year and array of CalendarDate for that month
  */
-export function wrapByMonth<C extends CalendarDate = CalendarDate> (days: Array<CalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0, CalendarClass: CalendarFactory<C>): ShallowReactive<Month[]> {
+export function wrapByMonth (days: Array<ICalendarDate>, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): ShallowReactive<Month[]> {
   const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
   const wrap: ShallowReactive<Month[]> = shallowReactive([]);
   
@@ -46,24 +46,24 @@ export function wrapByMonth<C extends CalendarDate = CalendarDate> (days: Array<
     const monthDays = days.slice(monthFirstDayIndex, monthLastDayIndex);
     
     if (otherMonthsDays) {
-      generateOtherMonthDays(monthDays, firstDayOfWeek, CalendarClass);
+      generateOtherMonthDays(monthDays, firstDayOfWeek);
     }
 
     wrap.push({
-      year: CalendarDate.yearFromMonthYear(monthYear),
-      month: CalendarDate.monthFromMonthYear(monthYear),
+      year: yearFromMonthYear(monthYear),
+      month: monthFromMonthYear(monthYear),
       days: monthDays,
     });
   });
   return wrap;
 }
 
-function generateOtherMonthDays<C extends CalendarDate = CalendarDate> (monthDays: C[], firstDayOfWeek: FirstDayOfWeek = 0, CalendarClass: CalendarFactory<C>) {
+function generateOtherMonthDays (monthDays: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
   if (monthDays.length <= 0) { return; }
 
   const beforeFrom = startOfWeek(monthDays[0].date, { weekStartsOn: firstDayOfWeek });
   const beforeTo = monthDays[0];
-  const beforeDays = generateDays(beforeFrom, beforeTo.date, CalendarClass, undefined, undefined);
+  const beforeDays = generateDays(beforeFrom, beforeTo.date);
   beforeDays.forEach(day => {
     day.disabled.value = true;
     day.otherMonth = true;
@@ -72,7 +72,7 @@ function generateOtherMonthDays<C extends CalendarDate = CalendarDate> (monthDay
   
   const afterFrom = monthDays[monthDays.length - 1];
   const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
-  const afterDays = generateDays(afterFrom!.date, afterTo, CalendarClass, undefined, undefined);
+  const afterDays = generateDays(afterFrom!.date, afterTo);
   afterDays.forEach(day => {
     day.disabled.value = true;
     day.otherMonth = true;
@@ -80,24 +80,24 @@ function generateOtherMonthDays<C extends CalendarDate = CalendarDate> (monthDay
   monthDays.push(...afterDays.slice(1));
 }
 
-export function generateMonth<C extends CalendarDate = CalendarDate> (monthYear: number, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0, CalendarClass: CalendarFactory<C>): Month {
+export function generateMonth (monthYear: number, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month {
   const newMonth: Month = {
-    year: CalendarDate.yearFromMonthYear(monthYear),
-    month: CalendarDate.monthFromMonthYear(monthYear),
+    year: yearFromMonthYear(monthYear),
+    month: monthFromMonthYear(monthYear),
     days: [],
   };
   const monthRefDay = new Date(newMonth.year, newMonth.month);
-  const monthDays: CalendarDate[] = generateDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay), CalendarClass);
+  const monthDays: ICalendarDate[] = generateDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay));
 
   if (otherMonthsDays) {
-    generateOtherMonthDays(monthDays, firstDayOfWeek, CalendarClass);
+    generateOtherMonthDays(monthDays, firstDayOfWeek);
   }
 
   newMonth.days = monthDays;
   return newMonth;
 }
 
-export function wrapByWeek (days: Array<CalendarDate>) {
+export function wrapByWeek (days: Array<ICalendarDate>) {
   // TODO implement
   return [];
 }

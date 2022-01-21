@@ -1,44 +1,43 @@
 import { isToday } from "date-fns";
 import { Ref, ref } from "vue";
 
-export class CalendarDate {
+export interface ICalendarDate {
   readonly date: Date;
-  otherMonth = false;
-  disabled: Ref<boolean> = ref(false);
-  isSelected: Ref<boolean> = ref(false);
-  isBetween: Ref<boolean> = ref(false);
-  isHovered: Ref<boolean> = ref(false);
+  otherMonth: boolean;
+  disabled: Ref<boolean>;
+  isSelected: Ref<boolean>;
+  isBetween: Ref<boolean>;
+  isHovered: Ref<boolean>;
 
   isToday: boolean;
   isWeekend: boolean;
+  
+  monthYearIndex: number;
+  dayId: string;
+}
 
-  constructor ();
-  constructor (date: Date);
-  constructor (value: number | string);
-  constructor (...args: number[]);
+export function calendarFactory (...args: any[]): ICalendarDate {
+  // @ts-ignore
+  const date = new Date(...args);
+  const weekDay = date.getDay();
+  return {
+    date,
+    isToday: isToday(date),
+    isWeekend: weekDay === 0 || weekDay > 6,
+    otherMonth: false,
+    disabled: ref(false),
+    isSelected: ref(false),
+    isBetween: ref(false),
+    isHovered: ref(false),
+    monthYearIndex: date.getFullYear() * 12 + date.getMonth(),
+    dayId: [date.getFullYear(), date.getMonth(), date.getDate()].join('-'),
+  };
+}
 
-  constructor (...args: any[]) {
-    // @ts-ignore
-    this.date = new Date(...args);
-    this.isToday = isToday(this.date);
-    
-    const weekDay = this.date.getDay();
-    this.isWeekend = weekDay === 0 || weekDay > 6;
-  }
+export function yearFromMonthYear(monthYear: number) {
+  return Math.floor(monthYear / 12);
+}
 
-  get monthYearIndex (): number {
-    return this.date.getFullYear() * 12 + this.date.getMonth();
-  }
-
-  get dayId (): string {
-    return [this.date.getFullYear(), this.date.getMonth(), this.date.getDate()].join('-');
-  }
-
-  static yearFromMonthYear(monthYear: number) {
-    return Math.floor(monthYear / 12);
-  }
-
-  static monthFromMonthYear(monthYear: number) {
-    return monthYear % 12;
-  }
+export function monthFromMonthYear(monthYear: number) {
+  return monthYear % 12;
 }

@@ -52,13 +52,10 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CustomDate } from './CustomDate';
-
 
 const disabledDates = [addDays(new Date(), 10)];
 
 const firstDayOfWeek = 1;
-
 
 const pricesByDay = [
   { day: '22/01/2022', price: 10 },
@@ -72,13 +69,6 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalenda
   firstDayOfWeek,
   locale: fr,
   preSelection: [new Date(), addDays(new Date(), 6)],
-  calendarClass: new CustomDate(),
-  factory: (...args: any[]) => {
-    const calendarDate = new CustomDate(...args);
-    const priceObj = pricesByDay.find(price => price.day === calendarDate.date.toLocaleDateString());
-    calendarDate.setPrice(priceObj?.price || 0);
-    return calendarDate;
-  },
 });
 
 const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days } = useMonthlyCalendar({ infinite: true });
