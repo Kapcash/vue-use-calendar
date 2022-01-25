@@ -1,6 +1,6 @@
 <template>
   <div class="calendar">
-    <h2>Monthly calendar picker example</h2>
+    <h2>Monthly infinite calendar picker</h2>
     Selection: 
     <div 
       v-for="selected of selectedDates"

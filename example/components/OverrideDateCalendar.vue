@@ -1,13 +1,6 @@
 <template>
   <div class="calendar">
-    <h2>Monthly calendar picker example</h2>
-    Selection: 
-    <div 
-      v-for="selected of selectedDates"
-      :key="selected.dayId"
-    >
-      {{ selected.date }}
-    </div>
+    <h2>Override with price</h2>
 
     <div class="month">
       <span class="actions">
@@ -34,7 +27,7 @@
         >{{ weekday }}</span>
       </div>
       <div class="grid">
-        <CalendarCell
+        <CalendarPriceCell
           v-for="day of currentMonth.days"
           :key="day.dayId"
           :day="day"
@@ -48,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import CalendarCell from './CalendarCell.vue';
+import CalendarPriceCell from './CalendarPriceCell.vue';
 import { CustomDate } from './CustomDate';
 import { useCalendar } from '../../lib/use-calendar';
 import { ICalendarDate } from '../../lib/CalendarDate';
@@ -64,7 +57,7 @@ const pricesByDay = [
   { day: '24/01/2022', price: 99 },
 ];
 
-const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar<CustomDate>({
+const { useMonthlyCalendar, useWeekdays, listeners } = useCalendar<CustomDate>({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,

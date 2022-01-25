@@ -10,12 +10,12 @@ export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: () => WeeklyCalendarComposable;
-  selectedDates: ComputedRef<Array<ICalendarDate>>;
+  selectedDates: ComputedRef<Array<C>>;
   listeners: {
-    selectSingle: (clickedDate: ICalendarDate) => void;
-    selectMultiple: (clickedDate: ICalendarDate) => void;
-    selectRange: (clickedDate: ICalendarDate) => void;
-    hoverMultiple: (clickedDate: ICalendarDate) => void;
+    selectSingle: (clickedDate: C) => void;
+    selectMultiple: (clickedDate: C) => void;
+    selectRange: (clickedDate: C) => void;
+    hoverMultiple: (clickedDate: C) => void;
     resetHover: () => void;
   };
 }
@@ -35,16 +35,16 @@ export interface MontlyOptions {
   otherMonthDays?: boolean;
 }
 
-export type Month = {
+export type Month<C extends ICalendarDate = ICalendarDate> = {
   month: number;
   year: number;
-  days: ICalendarDate[];
+  days: C[];
 };
 export type Week = Array<ICalendarDate>;
 
 export interface MonthlyCalendarComposable<C extends ICalendarDate> {
-  currentMonth: ShallowRef<Month>;
-  months: ShallowReactive<Month[]>;
+  currentMonth: ShallowRef<Month<C>>;
+  months: ShallowReactive<Month<C>[]>;
   nextMonth: () => void;
   prevMonth: () => void;
   days: ComputedRef<Array<C>>;
