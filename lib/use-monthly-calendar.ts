@@ -5,14 +5,14 @@ import { generateDays, generateMonth, wrapByMonth } from "./utils";
 import { ICalendarDate } from "./CalendarDate";
 import { useComputeds, useSelectors } from "./computeds";
 
-const DEFAULT_MONTLY_OPTS: MontlyOptions = {
+const DEFAULT_MONTLY_OPTS: Readonly<MontlyOptions> = {
   infinite: false,
   fullWeeks: true,
 };
 
 export function monthlyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   return function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable<C> {
-    const { infinite, fullWeeks } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
+    const { infinite, fullWeeks } = { ...DEFAULT_MONTLY_OPTS, ...opts };
 
     let monthlyDays = generateDays(
       startOfMonth(globalOptions.from),
