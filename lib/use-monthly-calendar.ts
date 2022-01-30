@@ -26,7 +26,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     }
 
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, globalOptions.firstDayOfWeek) as ShallowReactive<Month<C>[]>;
-    const days = computed(() => daysByMonths.flatMap(month => month.days)) as ComputedRef<C[]>;
+    const days = computed(() => daysByMonths.flatMap(month => month.days));
 
     const currentMonthIndex = ref(0);
 

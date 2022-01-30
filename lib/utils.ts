@@ -1,7 +1,7 @@
 import { ShallowReactive, shallowReactive } from "@vue/runtime-core";
-import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { isAfter, isBefore, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getWeek } from "date-fns";
 import { ICalendarDate, calendarFactory, monthFromMonthYear, yearFromMonthYear } from "./CalendarDate";
-import { FirstDayOfWeek, Month } from "./types";
+import { FirstDayOfWeek, Month, Week } from "./types";
 
 export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array<Date> = [], preSelection: Array<Date> = []): Array<ICalendarDate> {
   fromDate.setHours(0, 0, 0, 0);
@@ -61,23 +61,30 @@ export function wrapByMonth (days: Array<ICalendarDate>, otherMonthsDays = false
 function generateOtherMonthDays (monthDays: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
   if (monthDays.length <= 0) { return; }
 
-  const beforeFrom = startOfWeek(monthDays[0].date, { weekStartsOn: firstDayOfWeek });
-  const beforeTo = monthDays[0];
+  completeWeekBefore(monthDays, firstDayOfWeek);
+  completeWeekAfter(monthDays, firstDayOfWeek);
+}
+
+function completeWeekBefore (dates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
+  const beforeFrom = startOfWeek(dates[0].date, { weekStartsOn: firstDayOfWeek });
+  const beforeTo = dates[0];
   const beforeDays = generateDays(beforeFrom, beforeTo.date);
   beforeDays.forEach(day => {
     day.disabled.value = true;
     day.otherMonth = true;
   });
-  monthDays.unshift(...beforeDays.slice(0, -1));
-  
-  const afterFrom = monthDays[monthDays.length - 1];
+  dates.unshift(...beforeDays.slice(0, -1));
+}
+
+function completeWeekAfter (dates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
+  const afterFrom = dates[dates.length - 1];
   const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
   const afterDays = generateDays(afterFrom!.date, afterTo);
   afterDays.forEach(day => {
     day.disabled.value = true;
     day.otherMonth = true;
   });
-  monthDays.push(...afterDays.slice(1));
+  dates.push(...afterDays.slice(1));
 }
 
 export function generateMonth (monthYear: number, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month {
@@ -97,7 +104,25 @@ export function generateMonth (monthYear: number, otherMonthsDays = false, first
   return newMonth;
 }
 
-export function wrapByWeek (days: Array<ICalendarDate>) {
-  // TODO implement
-  return [];
+export function wrapByWeek (days: Array<ICalendarDate>, fullWeeks: boolean, firstDayOfWeek: FirstDayOfWeek = 0) {
+  const getNbWeek = (day: ICalendarDate) => getWeek(day.date, { weekStartsOn: firstDayOfWeek });
+
+  function chunk (arr: Array<any>, size = 7) {
+    return Array(Math.ceil(arr.length / size)).fill(null).map((_, i) => {
+      return arr.slice(i * size, i * size + size);
+    });
+  }
+
+  const firstStartOfWeek = days.findIndex(day => day.date.getDay() === firstDayOfWeek);
+  const weeks = [days.slice(0, firstStartOfWeek), ...chunk(days.slice(firstStartOfWeek))];
+
+  if (fullWeeks) {
+    completeWeekBefore(weeks[0], firstDayOfWeek);
+    completeWeekAfter(weeks[weeks.length - 1], firstDayOfWeek);
+  }
+
+  return weeks.map(days => ({
+    weekNumber: getNbWeek(days[0]),
+    days,
+  })) as Week[];
 }

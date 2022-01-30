@@ -2,14 +2,17 @@ import { ICalendarDate } from "./CalendarDate";
 import { CalendarOptions, CalendarComposables, NormalizedCalendarOptions } from './types';
 import { useWeekdays } from "./use-weekdays";
 import { monthlyCalendar } from "./use-monthly-calendar";
+import { weeklyCalendar } from "./use-weekly-calendar";
 
 export function useCalendar<C extends ICalendarDate = ICalendarDate> (rawOptions: CalendarOptions<C>): CalendarComposables<C> {
   const options = normalizeGlobalParameters(rawOptions);
 
   const useMonthlyCalendar = monthlyCalendar(options);
+  const useWeeklyCalendar = weeklyCalendar(options);
 
   return {
     useMonthlyCalendar,
+    useWeeklyCalendar,
     useWeekdays: useWeekdays(options),
   };
 }

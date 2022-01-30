@@ -11,7 +11,7 @@ export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 
 export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
-  // useWeeklyCalendar: () => WeeklyCalendarComposable;
+  useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
 }
 
 interface CalendarComposable<C extends ICalendarDate> {
@@ -79,14 +79,24 @@ export interface MonthlyCalendarComposable<C extends ICalendarDate> extends Cale
 
 // Week
 
-export type Week = Array<ICalendarDate>;
+export type Week<C extends ICalendarDate = ICalendarDate> = {
+  days: Array<C>;
+  weekNumber: number;
+};
 
-export interface WeeklyCalendarComposable {
-  weeks: Array<Week>;
+export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
+  weeks: Array<Week<C>>;
+  currentWeekIndex: Ref<number>;
+  currentWeek: ComputedRef<Week<C>>;
+  nextWeek: () => void;
+  prevWeek: () => void;
+  nextWeekEnabled: ComputedRef<boolean>;
+  prevWeekEnabled: ComputedRef<boolean>;
 }
 
 export interface WeeklyOptions {
   infinite?: boolean;
+  fullWeeks?: boolean;
 }
 
 export type WeekdaysComposable = Array<string>;
