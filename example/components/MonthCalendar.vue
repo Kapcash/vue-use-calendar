@@ -68,12 +68,13 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   preSelection: [new Date(), addDays(new Date(), 6)],
 });
 
-const { nextMonth, prevMonth, currentMonthIndex, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, months, currentMonthIndex, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
 
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {
-  currentMonthIndex.value = 0;
+  const today = new Date();
+  currentMonthIndex.value = months.findIndex(month => month.month === today.getMonth() && month.year === today.getFullYear());
 }
 </script>
 
