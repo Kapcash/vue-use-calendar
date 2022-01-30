@@ -58,7 +58,7 @@ export interface Listeners<C extends ICalendarDate> {
 
 export interface MontlyOptions {
   infinite?: boolean;
-  otherMonthDays?: boolean;
+  fullWeeks?: boolean;
 }
 
 export type Month<C extends ICalendarDate = ICalendarDate> = {
@@ -83,6 +83,10 @@ export type Week = Array<ICalendarDate>;
 
 export interface WeeklyCalendarComposable {
   weeks: Array<Week>;
+}
+
+export interface WeeklyOptions {
+  infinite?: boolean;
 }
 
 export type WeekdaysComposable = Array<string>;

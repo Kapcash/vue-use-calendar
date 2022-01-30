@@ -7,12 +7,12 @@ import { useComputeds, useSelectors } from "./computeds";
 
 const DEFAULT_MONTLY_OPTS: MontlyOptions = {
   infinite: false,
-  otherMonthDays: true,
+  fullWeeks: true,
 };
 
 export function monthlyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   return function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable<C> {
-    const { infinite, otherMonthDays } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
+    const { infinite, fullWeeks } = Object.assign(DEFAULT_MONTLY_OPTS, opts);
 
     let monthlyDays = generateDays(
       startOfMonth(globalOptions.from),
@@ -25,7 +25,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       monthlyDays = monthlyDays.map(globalOptions.factory);
     }
 
-    const daysByMonths = wrapByMonth(monthlyDays, otherMonthDays, globalOptions.firstDayOfWeek) as ShallowReactive<Month<C>[]>;
+    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, globalOptions.firstDayOfWeek) as ShallowReactive<Month<C>[]>;
     const days = computed(() => daysByMonths.flatMap(month => month.days)) as ComputedRef<C[]>;
 
     const currentMonthIndex = ref(0);
@@ -39,7 +39,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       const isNext = monthIndex > currentMonthIndex.value;
       if (!newMonth) {
         const newMonthYear = currentMonth.value.days[10].monthYearIndex + (isNext ? 1 : -1);
-        const newMonth = generateMonth(newMonthYear, !!otherMonthDays, globalOptions.firstDayOfWeek) as Month<C>;
+        const newMonth = generateMonth(newMonthYear, !!fullWeeks, globalOptions.firstDayOfWeek) as Month<C>;
         isNext ? daysByMonths.push(newMonth) : daysByMonths.unshift(newMonth);
       }
     }
