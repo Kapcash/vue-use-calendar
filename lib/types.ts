@@ -82,6 +82,8 @@ export interface MonthlyCalendarComposable<C extends ICalendarDate> extends Cale
 export type Week<C extends ICalendarDate = ICalendarDate> = {
   days: Array<C>;
   weekNumber: number;
+  month: number;
+  year: number;
 };
 
 export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
@@ -96,7 +98,6 @@ export interface WeeklyCalendarComposable<C extends ICalendarDate> extends Calen
 
 export interface WeeklyOptions {
   infinite?: boolean;
-  fullWeeks?: boolean;
 }
 
 export type WeekdaysComposable = Array<string>;

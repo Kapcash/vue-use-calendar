@@ -1,22 +1,21 @@
 import { computed, ref, ShallowReactive } from "vue";
-import { startOfMonth, endOfMonth } from "date-fns";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from './types';
 import { generateDays, wrapByWeek } from "./utils";
 import { ICalendarDate } from "./CalendarDate";
 import { useComputeds, useSelectors } from "./computeds";
+import { endOfWeek, startOfWeek } from "date-fns";
 
 const DEFAULT_MONTLY_OPTS: WeeklyOptions = {
   infinite: false,
-  fullWeeks: true,
 };
 
 export function weeklyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<C> {
-    const { infinite, fullWeeks } = { ...DEFAULT_MONTLY_OPTS, ...opts };
+    const { infinite } = { ...DEFAULT_MONTLY_OPTS, ...opts };
 
     let weeklyDays = generateDays(
-      startOfMonth(globalOptions.from),
-      endOfMonth(globalOptions.to!),
+      startOfWeek(globalOptions.from, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      endOfWeek(globalOptions.to!, { weekStartsOn: globalOptions.firstDayOfWeek }),
       globalOptions.disabled,
       globalOptions.preSelection,
     );
@@ -25,7 +24,7 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       weeklyDays = weeklyDays.map(globalOptions.factory);
     }
 
-    const daysByWeeks = wrapByWeek(weeklyDays, fullWeeks!, globalOptions.firstDayOfWeek) as ShallowReactive<Week<C>[]>;
+    const daysByWeeks = wrapByWeek(weeklyDays, globalOptions.firstDayOfWeek) as ShallowReactive<Week<C>[]>;
     const days = computed(() => daysByWeeks.flatMap(week => week.days));
 
     const currentWeekIndex = ref(0);

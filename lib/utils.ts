@@ -104,7 +104,7 @@ export function generateMonth (monthYear: number, otherMonthsDays = false, first
   return newMonth;
 }
 
-export function wrapByWeek (days: Array<ICalendarDate>, fullWeeks: boolean, firstDayOfWeek: FirstDayOfWeek = 0) {
+export function wrapByWeek (days: Array<ICalendarDate>, firstDayOfWeek: FirstDayOfWeek = 0) {
   const getNbWeek = (day: ICalendarDate) => getWeek(day.date, { weekStartsOn: firstDayOfWeek });
 
   function chunk (arr: Array<any>, size = 7) {
@@ -114,15 +114,14 @@ export function wrapByWeek (days: Array<ICalendarDate>, fullWeeks: boolean, firs
   }
 
   const firstStartOfWeek = days.findIndex(day => day.date.getDay() === firstDayOfWeek);
-  const weeks = [days.slice(0, firstStartOfWeek), ...chunk(days.slice(firstStartOfWeek))];
+  const weeks = [days.slice(0, firstStartOfWeek), ...chunk(days.slice(firstStartOfWeek))].filter(chunk => chunk.length > 0);
 
-  if (fullWeeks) {
-    completeWeekBefore(weeks[0], firstDayOfWeek);
-    completeWeekAfter(weeks[weeks.length - 1], firstDayOfWeek);
-  }
-
-  return weeks.map(days => ({
+  
+  const weeksObj: Week[] = weeks.map(days => ({
     weekNumber: getNbWeek(days[0]),
+    month: days[0].date.getMonth(),
+    year: days[0].date.getFullYear(),
     days,
-  })) as Week[];
+  }));
+  return weeksObj;
 }

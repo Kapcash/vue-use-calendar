@@ -18,7 +18,7 @@
           -
         </button>
 
-        {{ currentWeek.weekNumber + 1 }}
+        {{ currentWeek.month + 1 }} - {{ currentWeek.year }} W:{{ currentWeek.weekNumber + 1 }}
 
         <button
           :disabled="!nextWeekEnabled"
@@ -38,9 +38,7 @@
           v-for="day of currentWeek.days"
           :key="day.dayId"
           :day="day"
-          @click="listeners.selectRange(day)"
-          @mouseover="listeners.hoverMultiple(day)"
-          @mouseleave="listeners.resetHover()"
+          @click="listeners.selectSingle(day)"
         />
       </div>
     </div>
@@ -63,10 +61,10 @@ const { useWeeklyCalendar, useWeekdays } = useCalendar({
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
-  preSelection: [new Date(), addDays(new Date(), 6)],
+  preSelection: [addDays(new Date(), 2)],
 });
 
-const { currentWeek, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar({ fullWeeks: true });
+const { currentWeek, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar();
 
 const weekdays = useWeekdays();
 </script>
