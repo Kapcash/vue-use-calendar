@@ -2,15 +2,17 @@
   <div class="calendar">
     <h2>Monthly infinite calendar picker</h2>
     Selection: 
-    <div 
+    <span 
       v-for="selected of selectedDates"
       :key="selected.dayId"
     >
-      {{ selected.date }}
-    </div>
+      {{ selected.date.toLocaleDateString() }}
+    </span>
+
+    <button @click="goToCurrentMonth">Today</button>
 
     <div class="month">
-      <span class="actions">
+      <div class="actions">
         <button
           :disabled="!prevMonthEnabled"
           @click="prevMonth"
@@ -26,7 +28,7 @@
         >
           +
         </button>
-      </span>
+      </div>
       <div class="weeknames grid">
         <span
           v-for="weekday of weekdays"
@@ -66,9 +68,13 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   preSelection: [new Date(), addDays(new Date(), 6)],
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, currentMonthIndex, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
 
 const weekdays = useWeekdays();
+
+function goToCurrentMonth () {
+  currentMonthIndex.value = 0;
+}
 </script>
 
 <style scoped>
