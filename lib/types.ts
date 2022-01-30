@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, ShallowReactive, ShallowRef } from "vue";
+import { ComputedRef, Ref, ShallowReactive, ShallowRef } from "vue";
 import { ICalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string;
@@ -68,7 +68,8 @@ export type Month<C extends ICalendarDate = ICalendarDate> = {
 };
 
 export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-  currentMonth: ShallowRef<Month<C>>;
+  currentMonthIndex: Ref<number>;
+  currentMonth: ComputedRef<Month<C>>;
   months: ShallowReactive<Month<C>[]>;
   nextMonth: () => void;
   prevMonth: () => void;
