@@ -57,7 +57,7 @@ const disabledDates = [addDays(new Date(), 10)];
 
 const firstDayOfWeek = 1;
 
-const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalendar({
+const { useMonthlyCalendar, useWeekdays } = useCalendar({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
@@ -66,7 +66,7 @@ const { useMonthlyCalendar, useWeekdays, listeners, selectedDates } = useCalenda
   preSelection: [new Date(), addDays(new Date(), 6)],
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
 
 const weekdays = useWeekdays();
 </script>

@@ -6,21 +6,21 @@ type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
 
+// Calendar
+
 export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
-  useWeeklyCalendar: () => WeeklyCalendarComposable;
-  selectedDates: ComputedRef<Array<C>>;
-  listeners: {
-    selectSingle: (clickedDate: C) => void;
-    selectMultiple: (clickedDate: C) => void;
-    selectRange: (clickedDate: C) => void;
-    hoverMultiple: (clickedDate: C) => void;
-    resetHover: () => void;
-  };
+  // useWeeklyCalendar: () => WeeklyCalendarComposable;
 }
 
-export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
+interface CalendarComposable<C extends ICalendarDate> {
+  days: ComputedRef<Array<C>>;
+  selectedDates: ComputedRef<Array<C>>;
+  listeners: Listeners<C>;
+}
+
+export interface CalendarOptions<C extends ICalendarDate> {
   from: DateInput;
   to?: DateInput;
   disabled: Array<DateInput>;
@@ -29,6 +29,32 @@ export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
   preSelection?: Array<Date> | Date;
   factory?: (date: ICalendarDate) => C;
 }
+
+export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDate> {
+  from: Date;
+  to?: Date;
+  disabled: Array<Date>;
+  firstDayOfWeek: FirstDayOfWeek;
+  locale?: Locale;
+  preSelection?: Array<Date>;
+  factory?: (date: ICalendarDate) => C;
+}
+
+export interface Computeds<C extends ICalendarDate> {
+  selectedDates: ComputedRef<C[]>;
+  hoveredDates: ComputedRef<C[]>;
+  betweenDates: ComputedRef<C[]>;
+}
+
+export interface Listeners<C extends ICalendarDate> {
+  selectSingle: (clickedDate: ICalendarDate) => void;
+  selectRange: (clickedDate: ICalendarDate) => void;
+  selectMultiple: (clickedDate: ICalendarDate) => void;
+  hoverMultiple: (hoveredDate: ICalendarDate) => void;
+  resetHover: () => void;
+}
+
+// Month
 
 export interface MontlyOptions {
   infinite?: boolean;
@@ -40,17 +66,19 @@ export type Month<C extends ICalendarDate = ICalendarDate> = {
   year: number;
   days: C[];
 };
-export type Week = Array<ICalendarDate>;
 
-export interface MonthlyCalendarComposable<C extends ICalendarDate> {
+export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
   currentMonth: ShallowRef<Month<C>>;
   months: ShallowReactive<Month<C>[]>;
   nextMonth: () => void;
   prevMonth: () => void;
-  days: ComputedRef<Array<C>>;
   nextMonthEnabled: ComputedRef<boolean>;
   prevMonthEnabled: ComputedRef<boolean>;
 }
+
+// Week
+
+export type Week = Array<ICalendarDate>;
 
 export interface WeeklyCalendarComposable {
   weeks: Array<Week>;

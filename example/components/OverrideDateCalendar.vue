@@ -57,7 +57,7 @@ const pricesByDay = [
   { day: '24/01/2022', price: 99 },
 ];
 
-const { useMonthlyCalendar, useWeekdays, listeners } = useCalendar<CustomDate>({
+const { useMonthlyCalendar, useWeekdays } = useCalendar<CustomDate>({
   from: new Date(),
   to: addMonths(new Date(), 2),
   disabled: disabledDates,
@@ -73,7 +73,7 @@ const { useMonthlyCalendar, useWeekdays, listeners } = useCalendar<CustomDate>({
   },
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days, listeners } = useMonthlyCalendar({ infinite: true });
 
 const t = days.value[0];
 console.log(t.price);
