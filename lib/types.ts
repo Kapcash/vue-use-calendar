@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, Ref, ShallowReactive, ShallowRef } from "vue";
+import { ComputedRef, Ref, ShallowReactive } from "vue";
 import { ICalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string;
@@ -47,10 +47,10 @@ export interface Computeds<C extends ICalendarDate> {
 }
 
 export interface Listeners<C extends ICalendarDate> {
-  selectSingle: (clickedDate: ICalendarDate) => void;
-  selectRange: (clickedDate: ICalendarDate) => void;
-  selectMultiple: (clickedDate: ICalendarDate) => void;
-  hoverMultiple: (hoveredDate: ICalendarDate) => void;
+  selectSingle: (clickedDate: C) => void;
+  selectRange: (clickedDate: C) => void;
+  selectMultiple: (clickedDate: C) => void;
+  hoverMultiple: (hoveredDate: C) => void;
   resetHover: () => void;
 }
 
