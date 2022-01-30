@@ -53,8 +53,9 @@ const disabledDates = [addDays(new Date(), 10)];
 const firstDayOfWeek = 1;
 
 const pricesByDay = [
-  { day: '22/01/2022', price: 10 },
-  { day: '24/01/2022', price: 99 },
+  { day: addDays(new Date(), 3).toLocaleDateString(), price: 10 },
+  { day: addDays(new Date(), 4).toLocaleDateString(), price: 99 },
+  { day: addDays(new Date(), 6).toLocaleDateString(), price: 50 },
 ];
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar<CustomDate>({

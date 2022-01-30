@@ -107,7 +107,7 @@ export function generateMonth (monthYear: number, otherMonthsDays = false, first
 export function wrapByWeek (days: Array<ICalendarDate>, firstDayOfWeek: FirstDayOfWeek = 0) {
   const getNbWeek = (day: ICalendarDate) => getWeek(day.date, { weekStartsOn: firstDayOfWeek });
 
-  function chunk (arr: Array<any>, size = 7) {
+  function chunk<T> (arr: Array<T>, size = 7) {
     return Array(Math.ceil(arr.length / size)).fill(null).map((_, i) => {
       return arr.slice(i * size, i * size + size);
     });
@@ -116,7 +116,6 @@ export function wrapByWeek (days: Array<ICalendarDate>, firstDayOfWeek: FirstDay
   const firstStartOfWeek = days.findIndex(day => day.date.getDay() === firstDayOfWeek);
   const weeks = [days.slice(0, firstStartOfWeek), ...chunk(days.slice(firstStartOfWeek))].filter(chunk => chunk.length > 0);
 
-  
   const weeksObj: Week[] = weeks.map(days => ({
     weekNumber: getNbWeek(days[0]),
     month: days[0].date.getMonth(),
@@ -124,4 +123,12 @@ export function wrapByWeek (days: Array<ICalendarDate>, firstDayOfWeek: FirstDay
     days,
   }));
   return weeksObj;
+}
+
+export function disableExtendedDates (dates: ICalendarDate[], from: Date, to: Date) {
+  const beforeFromDates = dates.slice(0, dates.findIndex(day => isSameDay(day.date, from)));
+  const afterToDates = dates.slice(dates.findIndex(day => isSameDay(day.date, to!)));
+  beforeFromDates.concat(afterToDates).forEach(day => {
+    day.disabled.value = true;
+  });
 }

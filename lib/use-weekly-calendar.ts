@@ -1,6 +1,6 @@
 import { computed, ref, ShallowReactive } from "vue";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from './types';
-import { generateDays, wrapByWeek } from "./utils";
+import { disableExtendedDates, generateDays, wrapByWeek } from "./utils";
 import { ICalendarDate } from "./CalendarDate";
 import { useComputeds, useSelectors } from "./computeds";
 import { endOfWeek, startOfWeek } from "date-fns";
@@ -19,6 +19,10 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       globalOptions.disabled,
       globalOptions.preSelection,
     );
+    disableExtendedDates(weeklyDays, globalOptions.from, globalOptions.to!);
+    if (globalOptions.factory) {
+      weeklyDays = weeklyDays.map(globalOptions.factory);
+    }
 
     if (globalOptions.factory) {
       weeklyDays = weeklyDays.map(globalOptions.factory);

@@ -1,7 +1,7 @@
 import { computed, ComputedRef, ref, ShallowReactive } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from './types';
-import { generateDays, generateMonth, wrapByMonth } from "./utils";
+import { disableExtendedDates, generateDays, generateMonth, wrapByMonth } from "./utils";
 import { ICalendarDate } from "./CalendarDate";
 import { useComputeds, useSelectors } from "./computeds";
 
@@ -20,6 +20,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       globalOptions.disabled,
       globalOptions.preSelection,
     );
+
+    disableExtendedDates(monthlyDays, globalOptions.from, globalOptions.to!);
 
     if (globalOptions.factory) {
       monthlyDays = monthlyDays.map(globalOptions.factory);

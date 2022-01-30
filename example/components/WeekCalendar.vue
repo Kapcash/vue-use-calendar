@@ -48,7 +48,7 @@
 <script lang="ts" setup>
 import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
-import { addDays, addMonths } from 'date-fns';
+import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const disabledDates = [addDays(new Date(), 10)];
@@ -57,7 +57,7 @@ const firstDayOfWeek = 1;
 
 const { useWeeklyCalendar, useWeekdays } = useCalendar({
   from: new Date(),
-  to: addMonths(new Date(), 2),
+  to: addDays(new Date(), 26),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
