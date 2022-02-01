@@ -34,6 +34,11 @@ export function calendarFactory (...args: any[]): ICalendarDate {
   };
 }
 
+/** Return a shallow copy that will keep the same property ref pointers */
+export function copyCalendarDate<C extends ICalendarDate> (date: C): C {
+  return { ...date };
+}
+
 export function yearFromMonthYear(monthYear: number) {
   return Math.floor(monthYear / 12);
 }
