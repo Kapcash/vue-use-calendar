@@ -1,4 +1,4 @@
-import { computed, ComputedRef, ref, ShallowReactive } from "vue";
+import { computed, ref, ShallowReactive } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from './types';
 import { disableExtendedDates, generateDays, generateMonth, wrapByMonth } from "./utils";
@@ -15,8 +15,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     const { infinite, fullWeeks } = { ...DEFAULT_MONTLY_OPTS, ...opts };
 
     let monthlyDays = generateDays(
-      startOfMonth(globalOptions.from),
-      endOfMonth(globalOptions.to!),
+      startOfMonth(globalOptions.from || new Date()),
+      endOfMonth(globalOptions.to || globalOptions.from || new Date()),
       globalOptions.disabled,
       globalOptions.preSelection,
     );
