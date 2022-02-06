@@ -1,13 +1,15 @@
 <template>
   <div class="calendar">
     <h2>Monthly infinite calendar picker</h2>
-    Selection: 
-    <span 
-      v-for="selected of selectedDates"
-      :key="selected.dayId"
-    >
-      {{ selected.date.toLocaleDateString() }}
-    </span>
+    <div class="row">
+      Selection:
+      <span
+        v-for="selected of selectedDates"
+        :key="selected.dayId"
+      >
+        {{ selected.date.toLocaleDateString() }}
+      </span>
+    </div> 
 
     <button @click="goToCurrentMonth">Today</button>
 
@@ -52,16 +54,16 @@
 <script lang="ts" setup>
 import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
-import { addDays, addMonths } from 'date-fns';
+import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const disabledDates = [addDays(new Date(), 10)];
+const disabledDates = [addDays(new Date(), 12)];
 
 const firstDayOfWeek = 1;
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
   from: new Date(),
-  to: addMonths(new Date(), 2),
+  // to: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
@@ -101,5 +103,10 @@ function goToCurrentMonth () {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   justify-items: center;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
 }
 </style>

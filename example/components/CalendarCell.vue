@@ -12,6 +12,7 @@
         hover: props.day.isHovered.value,
         between: props.day.isBetween.value,
         today: props.day.isToday,
+        red: props.day._copied,
       }"
       :disabled="props.day.disabled.value"
       @click="$emit('click')"
@@ -56,6 +57,12 @@ button.today {
 }
 button.light {
   background-color: lightgoldenrodyellow;
+}
+button.red {
+  color: red;
+}
+button.red:disabled {
+  color: lightsalmon;
 }
 button:not(:disabled).hover {
   background-color: hsl(157, 75%, 78%);

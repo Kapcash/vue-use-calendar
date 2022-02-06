@@ -24,9 +24,11 @@ export function generateDays (fromDate: Date, toDate: Date, disabledDates: Array
 }
 
 export function getBetweenDays (days: ICalendarDate[], first: ICalendarDate, second: ICalendarDate) {
-  const firstSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, first.date));
-  const currentSelectedDayIndex = days.findIndex((day) => isSameDay(day.date, second.date));
-  return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex + 1, currentSelectedDayIndex) : days.slice(currentSelectedDayIndex + 1, firstSelectedDayIndex);
+  const firstSelectedDayIndex = days.findIndex((day) => day._copied === first._copied && isSameDay(day.date, first.date));
+  const secondSelectedDayIndex = days.findIndex((day) => day._copied === second._copied && isSameDay(day.date, second.date));
+  const [lowestDate, greatestDate] = [firstSelectedDayIndex, secondSelectedDayIndex].sort((a, b) => a - b);
+  return days.slice(lowestDate + 1, greatestDate);
+  // return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex + 1, currentSelectedDayIndex) : days.slice(currentSelectedDayIndex + 1, firstSelectedDayIndex);
 }
 
 /**
@@ -46,7 +48,7 @@ export function wrapByMonth (days: Array<ICalendarDate>, otherMonthsDays = false
     const monthDays = days.slice(monthFirstDayIndex, monthLastDayIndex);
     
     if (otherMonthsDays) {
-      generateOtherMonthDays(monthDays, wrap[wrap.length - 1]?.days || [], days.slice(monthLastDayIndex), firstDayOfWeek);
+      generateOtherMonthDays(monthDays, wrap[wrap.length - 1]?.days || [], [], firstDayOfWeek);
     }
 
     wrap.push({
@@ -65,43 +67,62 @@ function generateOtherMonthDays (monthDays: ICalendarDate[], monthBefore:ICalend
   completeWeekAfter(monthDays, monthAfter, firstDayOfWeek);
 }
 
-function completeWeekBefore (dates: ICalendarDate[], beforeDates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
+function completeWeekBefore (newBeforeDays: ICalendarDate[], beforeDates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
   let beforeDays = [];
   if (beforeDates.length > 0) {
-    const howManyDaysMissing = dates[0].date.getDay() - firstDayOfWeek;
-    const beforeIdenticalDays = beforeDates.filter(date => !date.otherMonth).slice(-howManyDaysMissing);
-    beforeDays = beforeIdenticalDays.map(copyCalendarDate);
+    const lastWeek = beforeDates.slice(-7);
+    const lastWeekCopy = lastWeek.map(copyCalendarDate);
+    lastWeek.forEach(day => { day._copied = day.otherMonth; });
+    lastWeekCopy.forEach(day => { day.otherMonth = !day.otherMonth; day._copied = day.otherMonth; });
+    const howManyDaysDuplicated = 7 - newBeforeDays[0].date.getDay() + firstDayOfWeek;
+    beforeDays = lastWeekCopy;
+    newBeforeDays.splice(0, howManyDaysDuplicated);
   } else {
-    const beforeFrom = startOfWeek(dates[0].date, { weekStartsOn: firstDayOfWeek });
-    const beforeTo = dates[0];
-    beforeDays = generateDays(beforeFrom, beforeTo.date).slice(0, -1);
+    const beforeTo = newBeforeDays[0].date;
+    const beforeFrom = startOfWeek(beforeTo, { weekStartsOn: firstDayOfWeek });
+    beforeDays = generateDays(beforeFrom, beforeTo).slice(0, -1);
+    beforeDays.forEach(day => { day.otherMonth = true; });
   }
 
-  beforeDays.forEach(day => {
-    day.otherMonth = true;
-  });
-  dates.unshift(...beforeDays);
+  newBeforeDays.unshift(...beforeDays);
 }
 
-function completeWeekAfter (dates: ICalendarDate[], afterDates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
+function completeWeekAfter (newAfterDays: ICalendarDate[], afterDates: ICalendarDate[], firstDayOfWeek: FirstDayOfWeek = 0) {
   let afterDays = [];
   if (afterDates.length > 0) {
-    const howManyDaysMissing = (6 - dates[dates.length - 1].date.getDay() + firstDayOfWeek) % 7;
-    const afterIdenticalDays = afterDates.filter(date => !date.otherMonth).slice(0, howManyDaysMissing);
-    afterDays = afterIdenticalDays.map(copyCalendarDate);
+    const nextWeek = afterDates.slice(0, 7);
+    const nextWeekCopy = nextWeek.map(copyCalendarDate);
+    nextWeek.forEach(day => { day._copied = day.otherMonth; });
+    nextWeekCopy.forEach(day => { day.otherMonth = !day.otherMonth; day._copied = day.otherMonth; });
+    const howManyDaysDuplicated = (newAfterDays[newAfterDays.length - 1].date.getDay() + firstDayOfWeek - 1) % 7;
+    afterDays = nextWeekCopy;
+    newAfterDays.splice(-howManyDaysDuplicated, howManyDaysDuplicated);
   } else {
-    const afterFrom = dates[dates.length - 1];
+    const afterFrom = newAfterDays[newAfterDays.length - 1];
     const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: firstDayOfWeek });
     afterDays = generateDays(afterFrom!.date, afterTo).slice(1);
+    afterDays.forEach(day => { day.otherMonth = true; });
   }
 
-  afterDays.forEach(day => {
-    day.otherMonth = true;
-  });
-  dates.push(...afterDays);
+  newAfterDays.push(...afterDays);
 }
 
-export function generateMonth (monthYear: number, otherMonthsDays = false, firstDayOfWeek: FirstDayOfWeek = 0): Month {
+interface GenerateMonthOptions {
+  otherMonthsDays: boolean;
+  firstDayOfWeek: FirstDayOfWeek;
+  beforeMonthDays: ICalendarDate[];
+  afterMonthDays: ICalendarDate[];
+}
+
+const DEFAULT_GEN_MONTH_OPTIONS: GenerateMonthOptions = {
+  otherMonthsDays: false,
+  firstDayOfWeek: 0,
+  beforeMonthDays: [],
+  afterMonthDays: [],
+};
+
+export function generateMonth (monthYear: number, options: Partial<GenerateMonthOptions>): Month {
+  const opts: GenerateMonthOptions = { ...DEFAULT_GEN_MONTH_OPTIONS, ...options };
   const newMonth: Month = {
     year: yearFromMonthYear(monthYear),
     month: monthFromMonthYear(monthYear),
@@ -110,8 +131,8 @@ export function generateMonth (monthYear: number, otherMonthsDays = false, first
   const monthRefDay = new Date(newMonth.year, newMonth.month);
   const monthDays: ICalendarDate[] = generateDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay));
 
-  if (otherMonthsDays) {
-    generateOtherMonthDays(monthDays, [], [], firstDayOfWeek);
+  if (opts.otherMonthsDays) { // TODO Link previous / next otherMonth days
+    generateOtherMonthDays(monthDays, opts.beforeMonthDays, opts.afterMonthDays, opts.firstDayOfWeek);
   }
 
   newMonth.days = monthDays;
@@ -139,9 +160,9 @@ export function wrapByWeek (days: Array<ICalendarDate>, firstDayOfWeek: FirstDay
   return weeksObj;
 }
 
-export function disableExtendedDates (dates: ICalendarDate[], from: Date, to: Date) {
+export function disableExtendedDates (dates: ICalendarDate[], from: Date, to?: Date) {
   const beforeFromDates = dates.slice(0, dates.findIndex(day => isSameDay(day.date, from)));
-  const afterToDates = dates.slice(dates.findIndex(day => isSameDay(day.date, to!)));
+  const afterToDates = to ? dates.slice(dates.findIndex(day => isSameDay(day.date, to))) : [];
   beforeFromDates.concat(afterToDates).forEach(day => {
     day.disabled.value = true;
   });

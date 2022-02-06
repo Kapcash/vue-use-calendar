@@ -1,6 +1,6 @@
 import { computed, ref, ShallowReactive } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from './types';
+import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions, FirstDayOfWeek } from './types';
 import { disableExtendedDates, generateDays, generateMonth, wrapByMonth } from "./utils";
 import { ICalendarDate } from "./CalendarDate";
 import { useComputeds, useSelectors } from "./computeds";
@@ -21,7 +21,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       globalOptions.preSelection,
     );
 
-    disableExtendedDates(monthlyDays, globalOptions.from, globalOptions.to!);
+    disableExtendedDates(monthlyDays, globalOptions.from, globalOptions.to);
 
     if (globalOptions.factory) {
       monthlyDays = monthlyDays.map(globalOptions.factory);
@@ -41,7 +41,12 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       const isNext = monthIndex > currentMonthIndex.value;
       if (!newMonth) {
         const newMonthYear = currentMonth.value.days[10].monthYearIndex + (isNext ? 1 : -1);
-        const newMonth = generateMonth(newMonthYear, !!fullWeeks, globalOptions.firstDayOfWeek) as Month<C>;
+        const newMonth = generateMonth(newMonthYear, {
+          firstDayOfWeek: globalOptions.firstDayOfWeek,
+          otherMonthsDays: !!fullWeeks,
+          beforeMonthDays: daysByMonths[monthIndex - 1]?.days || [],
+          afterMonthDays: daysByMonths[monthIndex + 1]?.days || [],
+        }) as Month<C>;
         isNext ? daysByMonths.push(newMonth) : daysByMonths.unshift(newMonth);
       }
     }

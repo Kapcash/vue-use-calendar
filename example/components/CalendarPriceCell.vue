@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="wrap"
-    @mouseover="$emit('mouseover')"
-    @mouseleave="$emit('mouseleave')"
-  >
+  <div class="wrap">
     <button
       class="calendar-cell"
       :class="{
@@ -37,8 +33,6 @@ const props = defineProps({
 
 defineEmits({
   click: null,
-  mouseover: null,
-  mouseleave: null,
 });
 </script>
 

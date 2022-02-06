@@ -14,6 +14,8 @@ export interface ICalendarDate {
   
   monthYearIndex: number;
   dayId: string;
+
+  _copied: boolean;
 }
 
 export function calendarFactory (...args: any[]): ICalendarDate {
@@ -31,12 +33,13 @@ export function calendarFactory (...args: any[]): ICalendarDate {
     isHovered: ref(false),
     monthYearIndex: date.getFullYear() * 12 + date.getMonth(),
     dayId: [date.getFullYear(), date.getMonth(), date.getDate()].join('-'),
+    _copied: false,
   };
 }
 
 /** Return a shallow copy that will keep the same property ref pointers */
 export function copyCalendarDate<C extends ICalendarDate> (date: C): C {
-  return { ...date };
+  return { ...date, _copied: true };
 }
 
 export function yearFromMonthYear(monthYear: number) {

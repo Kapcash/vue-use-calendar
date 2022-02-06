@@ -5,27 +5,30 @@
       Selection: {{ selectedDates?.[0]?.date?.toLocaleDateString() }}
     </div>
     <div>Current month: {{ currentMonth.month + 1 }} - {{ currentMonth.year }}</div>
-    <div class="weeknames grid">
-      <span
-        v-for="weekday of weekdays"
-        :key="weekday"
-      >{{ weekday }}</span>
-    </div>
 
-    <div
-      v-for="month of months"
-      :key="month.month + month.year"
-      class="month"
-    >
-      {{ month.month + 1 }} - {{ month.year }}
-      <div class="grid">
-        <CalendarCell
-          v-for="day of month.days"
-          :key="day.dayId"
-          :day="day"
-          @click="listeners.selectSingle(day)"
-          @mouseleave="listeners.resetHover()"
-        />
+    <div>
+      <div class="weeknames grid">
+        <span
+          v-for="weekday of weekdays"
+          :key="weekday"
+        >{{ weekday }}</span>
+      </div>
+  
+      <div
+        v-for="month of months"
+        :key="month.month + month.year"
+        class="month"
+      >
+        {{ month.month + 1 }} - {{ month.year }}
+        <div class="grid">
+          <CalendarCell
+            v-for="day of month.days"
+            :key="day.dayId"
+            :day="day"
+            @click="listeners.selectSingle(day)"
+            @mouseleave="listeners.resetHover()"
+          />
+        </div>
       </div>
     </div>
   </div>

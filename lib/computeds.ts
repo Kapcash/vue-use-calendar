@@ -5,15 +5,15 @@ import { getBetweenDays } from "./utils";
 
 export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>): Computeds<C> {
   const selectedDates = computed(() => {
-    return days.value.filter(day => !day.otherMonth && day.isSelected.value);
+    return days.value.filter(day => !day._copied && day.isSelected.value);
   });
 
   const hoveredDates = computed(() => {
-    return days.value.filter(day => !day.otherMonth && day.isHovered.value);
+    return days.value.filter(day => !day._copied && day.isHovered.value);
   });
 
   const betweenDates = computed(() => {
-    return days.value.filter(day => !day.otherMonth && day.isBetween.value);
+    return days.value.filter(day => !day._copied && day.isBetween.value);
   });
 
   return {
