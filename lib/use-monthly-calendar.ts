@@ -1,87 +1,69 @@
-import { computed, ref, ShallowReactive } from "vue";
+import { computed, reactive, ref, ShallowReactive, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions, FirstDayOfWeek } from './types';
-import { disableExtendedDates, generateDays, generateMonth, wrapByMonth } from "./utils";
+import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from './types';
+import { disableExtendedDates } from "./utils/utils";
 import { ICalendarDate } from "./CalendarDate";
-import { useComputeds, useSelectors } from "./computeds";
-
-const DEFAULT_MONTLY_OPTS: Readonly<MontlyOptions> = {
-  infinite: false,
-  fullWeeks: true,
-};
+import { useComputeds, useSelectors } from "./reactiveDates";
+import { useNavigation } from "./use-navigation";
+import { monthGenerators } from "./utils/utils.month";
 
 export function monthlyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
-  return function useMonthlyCalendar(opts?: MontlyOptions): MonthlyCalendarComposable<C> {
-    const { infinite, fullWeeks } = { ...DEFAULT_MONTLY_OPTS, ...opts };
+  const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
 
-    let monthlyDays = generateDays(
+  return function useMonthlyCalendar(opts: MontlyOptions = {}): MonthlyCalendarComposable<C> {
+    const { infinite = true, fullWeeks = true } = opts;
+
+    const monthlyDays = generateConsecutiveDays(
       startOfMonth(globalOptions.from || new Date()),
       endOfMonth(globalOptions.to || globalOptions.from || new Date()),
-      globalOptions.disabled,
-      globalOptions.preSelection,
     );
 
     disableExtendedDates(monthlyDays, globalOptions.from, globalOptions.to);
 
-    if (globalOptions.factory) {
-      monthlyDays = monthlyDays.map(globalOptions.factory);
-    }
+    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks) as ShallowReactive<Month<C>[]>;
 
-    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, globalOptions.firstDayOfWeek) as ShallowReactive<Month<C>[]>;
-    const days = computed(() => daysByMonths.flatMap(month => month.days));
-
+    const currentMonthAndYear = reactive({ month: globalOptions.from.getMonth(), year: globalOptions.from.getFullYear() });
     const currentMonthIndex = ref(0);
 
-    const currentMonth = computed(() => daysByMonths[currentMonthIndex.value]);
-    const prevMonthEnabled = computed(() => infinite || currentMonthIndex.value > 0);
-    const nextMonthEnabled = computed(() => infinite || currentMonthIndex.value < (daysByMonths.length - 1));
-    
-    function genMonth (monthIndex: number) {
-      const newMonth = daysByMonths[monthIndex];
-      const isNext = monthIndex > currentMonthIndex.value;
-      if (!newMonth) {
-        const newMonthYear = currentMonth.value.days[10].monthYearIndex + (isNext ? 1 : -1);
-        const newMonth = generateMonth(newMonthYear, {
-          firstDayOfWeek: globalOptions.firstDayOfWeek,
+    watchEffect(() => {
+      const newCurrentMonth = daysByMonths.findIndex(month => month.month === currentMonthAndYear.month && month.year === currentMonthAndYear.year);
+      if (newCurrentMonth < 0) {
+        // generate month
+      } else {
+        currentMonthIndex.value = newCurrentMonth;
+      }
+    });
+
+    const {
+      currentWrapper,
+      nextWrapper,
+      prevWrapper,
+      prevWrapperEnabled,
+      nextWrapperEnabled,
+    } = useNavigation(
+      daysByMonths,
+      (offset, currentMonth) => {
+        const newMonthYear = currentMonth.value.days[10].monthYearIndex + offset;
+        return generateMonth(newMonthYear, {
           otherMonthsDays: !!fullWeeks,
-          beforeMonthDays: daysByMonths[monthIndex - 1]?.days || [],
-          afterMonthDays: daysByMonths[monthIndex + 1]?.days || [],
+          beforeMonthDays: daysByMonths[offset - 1]?.days || [],
+          afterMonthDays: daysByMonths[offset + 1]?.days || [],
         }) as Month<C>;
-        isNext ? daysByMonths.push(newMonth) : daysByMonths.unshift(newMonth);
-      }
-    }
+      },
+      infinite);
 
-    function nextMonth () {
-      const newMontIndex = currentMonthIndex.value + 1;
-      if (infinite) {
-        genMonth(newMontIndex);
-      }
-      if (nextMonthEnabled.value) {
-        currentMonthIndex.value = newMontIndex;
-      }
-    }
-
-    function prevMonth () {
-      const newMontIndex = currentMonthIndex.value - 1;
-      if (infinite) {
-        genMonth(newMontIndex);
-      }
-      if (prevMonthEnabled.value) {
-        currentMonthIndex.value = Math.max(0, newMontIndex);
-      }
-    }
-
+    const days = computed(() => daysByMonths.flatMap(month => month.days));
     const computeds = useComputeds(days);
 
     return {
-      currentMonth,
+      currentMonth: currentWrapper,
       currentMonthIndex,
       months: daysByMonths,
       days,
-      nextMonth,
-      prevMonth,
-      prevMonthEnabled,
-      nextMonthEnabled,
+      nextMonth: nextWrapper,
+      prevMonth: prevWrapper,
+      prevMonthEnabled: prevWrapperEnabled,
+      nextMonthEnabled: nextWrapperEnabled,
       selectedDates: computeds.selectedDates,
       listeners: useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates),
     };

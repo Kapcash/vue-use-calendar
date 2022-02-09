@@ -1,4 +1,4 @@
-import { ICalendarDate } from "./CalendarDate";
+import { generateCalendarFactory, ICalendarDate } from "./CalendarDate";
 import { CalendarOptions, CalendarComposables, NormalizedCalendarOptions } from './types';
 import { useWeekdays } from "./use-weekdays";
 import { monthlyCalendar } from "./use-monthly-calendar";
@@ -22,6 +22,7 @@ export function normalizeGlobalParameters<C extends ICalendarDate> (opts: Calend
   const to: Date | undefined = opts.to ? new Date(opts.to) : undefined;
   const disabled: Date[] = opts.disabled.map(dis => new Date(dis));
   const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean) as Array<Date>;
+  const factory = generateCalendarFactory(opts.factory);
 
-  return { ...opts, from, to, disabled, preSelection };
+  return { ...opts, from, to, disabled, preSelection, factory };
 }

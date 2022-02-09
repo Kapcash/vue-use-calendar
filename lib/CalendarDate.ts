@@ -18,28 +18,37 @@ export interface ICalendarDate {
   _copied: boolean;
 }
 
-export function calendarFactory (...args: any[]): ICalendarDate {
-  // @ts-ignore
-  const date = new Date(...args);
-  const weekDay = date.getDay();
-  return {
-    date,
-    isToday: isToday(date),
-    isWeekend: weekDay === 0 || weekDay > 6,
-    otherMonth: false,
-    disabled: ref(false),
-    isSelected: ref(false),
-    isBetween: ref(false),
-    isHovered: ref(false),
-    monthYearIndex: date.getFullYear() * 12 + date.getMonth(),
-    dayId: [date.getFullYear(), date.getMonth(), date.getDate()].join('-'),
-    _copied: false,
+export type CalendarFactory<C extends ICalendarDate> = (...args: any[]) => C;
+
+export function generateCalendarFactory<C extends ICalendarDate> (customFactory?: (c: ICalendarDate) => C) {
+  const extendFactory = customFactory || ((c: ICalendarDate) => c as C);
+  return function (...args: any[]): C {
+    // @ts-ignore
+    const date = new Date(...args);
+    const weekDay = date.getDay();
+    return extendFactory({
+      date,
+      isToday: isToday(date),
+      isWeekend: weekDay === 0 || weekDay > 6,
+      otherMonth: false,
+      disabled: ref(false),
+      isSelected: ref(false),
+      isBetween: ref(false),
+      isHovered: ref(false),
+      monthYearIndex: dateToMonthYear(date),
+      dayId: [date.getFullYear(), date.getMonth(), date.getDate()].join('-'),
+      _copied: false,
+    });
   };
 }
 
 /** Return a shallow copy that will keep the same property ref pointers */
 export function copyCalendarDate<C extends ICalendarDate> (date: C): C {
   return { ...date, _copied: true };
+}
+
+export function dateToMonthYear(date: Date) {
+  return date.getFullYear() * 12 + date.getMonth();
 }
 
 export function yearFromMonthYear(monthYear: number) {

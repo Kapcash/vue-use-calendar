@@ -1,7 +1,7 @@
 import { computed, ComputedRef } from "vue";
 import { ICalendarDate } from "./CalendarDate";
 import { Listeners, Computeds } from "./types";
-import { getBetweenDays } from "./utils";
+import { getBetweenDays } from "./utils/utils";
 
 export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>): Computeds<C> {
   const selectedDates = computed(() => {

@@ -1,6 +1,6 @@
 import { Locale } from "date-fns";
 import { ComputedRef, Ref, ShallowReactive } from "vue";
-import { ICalendarDate } from "./CalendarDate";
+import { CalendarFactory, ICalendarDate } from "./CalendarDate";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -36,8 +36,8 @@ export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDa
   disabled: Array<Date>;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
-  preSelection?: Array<Date>;
-  factory?: (date: ICalendarDate) => C;
+  preSelection: Array<Date>;
+  factory: CalendarFactory<C>;
 }
 
 export interface Computeds<C extends ICalendarDate> {
@@ -61,11 +61,14 @@ export interface MontlyOptions {
   fullWeeks?: boolean;
 }
 
-export type Month<C extends ICalendarDate = ICalendarDate> = {
+export interface WrappedDays<C extends ICalendarDate = ICalendarDate> {
+  days: Array<C>;
+}
+
+export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
   month: number;
   year: number;
-  days: C[];
-};
+}
 
 export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
   currentMonthIndex: Ref<number>;
@@ -79,12 +82,11 @@ export interface MonthlyCalendarComposable<C extends ICalendarDate> extends Cale
 
 // Week
 
-export type Week<C extends ICalendarDate = ICalendarDate> = {
-  days: Array<C>;
+export interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
   weekNumber: number;
   month: number;
   year: number;
-};
+}
 
 export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
   weeks: Array<Week<C>>;
