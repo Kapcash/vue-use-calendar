@@ -31,9 +31,10 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
 
     const { currentWrapper, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
       daysByWeeks,
-      (offset, currentWeek) => {
-        const newMonthYear = currentWeek.value.days[0];
-        return generateWeek({ year: newMonthYear.date.getFullYear(), weekNumber: getWeek(newMonthYear.date) }, {
+      (newWeekIndex, currentWeek) => {
+        const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
+        const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
+        return generateWeek({ year, weekNumber }, {
           firstDayOfWeek: globalOptions.firstDayOfWeek,
         }) as Week<C>;
       },

@@ -41,6 +41,7 @@ export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDa
 }
 
 export interface Computeds<C extends ICalendarDate> {
+  pureDates: ComputedRef<C[]>;
   selectedDates: ComputedRef<C[]>;
   hoveredDates: ComputedRef<C[]>;
   betweenDates: ComputedRef<C[]>;
@@ -63,6 +64,7 @@ export interface MontlyOptions {
 
 export interface WrappedDays<C extends ICalendarDate = ICalendarDate> {
   days: Array<C>;
+  index: number;
 }
 
 export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
@@ -71,7 +73,7 @@ export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedD
 }
 
 export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-  currentMonthIndex: Ref<number>;
+  currentMonthAndYear: ShallowReactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<C>>;
   months: ShallowReactive<Month<C>[]>;
   nextMonth: () => void;

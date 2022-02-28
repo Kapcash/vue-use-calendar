@@ -1,4 +1,4 @@
-import { ShallowReactive, shallowReactive } from "@vue/runtime-core";
+import { ShallowReactive, shallowReactive } from "vue";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { copyCalendarDate, ICalendarDate, monthFromMonthYear, yearFromMonthYear } from "../CalendarDate";
 import { Month, NormalizedCalendarOptions } from "../types";
@@ -13,11 +13,20 @@ interface GenerateMonthOptions {
 export function monthGenerators<C extends ICalendarDate> (globalOptions: NormalizedCalendarOptions<C>) {
   const { generateConsecutiveDays } = generators(globalOptions);
 
+  function monthFactory (monthDays: Array<C>): Month<C> {
+    return {
+      days: monthDays,
+      month: monthDays[10].date.getMonth(),
+      year: monthDays[10].date.getFullYear(),
+      index: monthDays[10].monthYearIndex,
+    };
+  }
+
   /**
    * @param days Sorted array of CalendarDate
    * @returns Array of months including the month, year and array of CalendarDate for that month
    */
-  function wrapByMonth (days: Array<ICalendarDate>, otherMonthsDays = false): ShallowReactive<Month[]> {
+  function wrapByMonth (days: Array<C>, otherMonthsDays = false): ShallowReactive<Month[]> {
     const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
     const wrap: ShallowReactive<Month[]> = shallowReactive([]);
     
@@ -33,36 +42,26 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
         generateOtherMonthDays(monthDays, beforeMonth, []);
       }
 
-      wrap.push({
-        year: yearFromMonthYear(monthYear),
-        month: monthFromMonthYear(monthYear),
-        days: monthDays,
-      });
+      wrap.push(monthFactory(monthDays));
     });
     return wrap;
   }
 
-  function generateMonth (monthYear: number, options: Partial<GenerateMonthOptions>): Month {
+  function generateMonth (monthYear: number, options: Partial<GenerateMonthOptions>): Month<C> {
     const {
       otherMonthsDays = false,
       beforeMonthDays = [],
       afterMonthDays = [],
     } = options;
 
-    const newMonth: Month = {
-      year: yearFromMonthYear(monthYear),
-      month: monthFromMonthYear(monthYear),
-      days: [],
-    };
-    const monthRefDay = new Date(newMonth.year, newMonth.month);
-    const monthDays: ICalendarDate[] = generateConsecutiveDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay));
-
+    const monthRefDay = new Date(yearFromMonthYear(monthYear), monthFromMonthYear(monthYear));
+    const monthDays: C[] = generateConsecutiveDays(startOfMonth(monthRefDay), endOfMonth(monthRefDay));
+    
     if (otherMonthsDays) {
       generateOtherMonthDays(monthDays, beforeMonthDays, afterMonthDays);
     }
 
-    newMonth.days = monthDays;
-    return newMonth;
+    return monthFactory(monthDays);
   }
 
   function generateOtherMonthDays (monthDays: ICalendarDate[], monthBefore:ICalendarDate[], monthAfter:ICalendarDate[]) {
@@ -117,4 +116,12 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
     generateMonth,
     wrapByMonth,
   };
+}
+
+export function isAfter(monthA: Month, monthB: Month) {
+  return monthA.year > monthB.year || (monthA.year === monthB.year && monthA.month > monthB.month);
+}
+
+export function isBefore(monthA: Month, monthB: Month) {
+  return monthA.year < monthB.year || (monthA.year === monthB.year && monthA.month < monthB.month);
 }

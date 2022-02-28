@@ -4,19 +4,24 @@ import { Listeners, Computeds } from "./types";
 import { getBetweenDays } from "./utils/utils";
 
 export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>): Computeds<C> {
+  const pureDates = computed(() => {
+    return days.value.filter(day => !day._copied);
+  });
+
   const selectedDates = computed(() => {
-    return days.value.filter(day => !day._copied && day.isSelected.value);
+    return pureDates.value.filter(day => day.isSelected.value);
   });
 
   const hoveredDates = computed(() => {
-    return days.value.filter(day => !day._copied && day.isHovered.value);
+    return pureDates.value.filter(day => day.isHovered.value);
   });
 
   const betweenDates = computed(() => {
-    return days.value.filter(day => !day._copied && day.isBetween.value);
+    return pureDates.value.filter(day => day.isBetween.value);
   });
 
   return {
+    pureDates,
     selectedDates,
     hoveredDates,
     betweenDates,

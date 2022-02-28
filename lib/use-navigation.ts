@@ -9,28 +9,33 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: T[], generateW
   const nextWrapperEnabled = computed(() => infinite || currentWrapperIndex.value < (daysWrapper.length - 1));
 
   function nextWrapper () {
-    const newMontIndex = currentWrapperIndex.value + 1;
-    if (infinite && !currentWrapper.value) {
-      const newWrapper = generateWrapper(newMontIndex, currentWrapper);
-      daysWrapper.push(newWrapper);
-    }
-    if (nextWrapperEnabled.value) {
-      currentWrapperIndex.value = newMontIndex;
-    }
+    jumpTo(currentWrapper.value.index + 1);
   }
 
   function prevWrapper () {
-    const newMontIndex = currentWrapperIndex.value - 1;
-    if (infinite && !currentWrapper.value) {
-      const newWrapper = generateWrapper(newMontIndex, currentWrapper);
-      daysWrapper.unshift(newWrapper);
+    jumpTo(currentWrapper.value.index - 1);
+  }
+  
+  function jumpTo (newWrapperIndex: number) {
+    let newIndex = daysWrapper.findIndex(wrap => wrap.index === newWrapperIndex);
+    if (infinite && newIndex < 0) {
+      const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
+      if (newWrapperIndex === daysWrapper[0].index - 1) {
+        daysWrapper.unshift(newWrapper);
+        newIndex = 0;
+      } else if (newWrapperIndex === daysWrapper[daysWrapper.length - 1].index + 1) {
+        daysWrapper.push(newWrapper);
+        newIndex = daysWrapper.length - 1;
+      } else {
+        daysWrapper = [newWrapper];
+        newIndex = 0;
+      }
     }
-    if (prevWrapperEnabled.value) {
-      currentWrapperIndex.value = Math.max(0, newMontIndex);
-    }
+    currentWrapperIndex.value = Math.max(0, newIndex);
   }
 
   return {
+    jumpTo,
     nextWrapper,
     prevWrapper,
     prevWrapperEnabled,
