@@ -47,8 +47,12 @@ export function copyCalendarDate<C extends ICalendarDate> (date: C): C {
   return { ...date, _copied: true };
 }
 
-export function dateToMonthYear(date: Date) {
-  return date.getFullYear() * 12 + date.getMonth();
+export function dateToMonthYear(dateOrYear: Date | number, month?: number) {
+  if (typeof dateOrYear === 'number') {
+    return dateOrYear * 12 + (month || 0);
+  } else {
+    return dateOrYear.getFullYear() * 12 + dateOrYear.getMonth();
+  }
 }
 
 export function yearFromMonthYear(monthYear: number) {

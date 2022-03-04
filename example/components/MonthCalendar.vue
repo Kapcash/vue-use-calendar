@@ -9,9 +9,18 @@
       >
         {{ selected.date.toLocaleDateString() }}
       </span>
-    </div> 
+    </div>
 
     <button @click="goToCurrentMonth">Today</button>
+    <select v-model="currentMonthAndYear.year">
+      <option
+        v-for="year in years"
+        :key="year"
+        :value="year"
+      >
+        {{ year }}
+      </option>
+    </select>
 
     <div class="month">
       <div class="actions">
@@ -58,8 +67,9 @@ import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const disabledDates = [addDays(new Date(), 12)];
-
 const firstDayOfWeek = 1;
+
+const years = Array.from(new Array(100)).map((_, i) => 1950 + i);
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
   from: new Date(),

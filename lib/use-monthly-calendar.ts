@@ -41,15 +41,19 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       },
       infinite);
 
-    // FIXME Not updated yet
     const currentMonthAndYear = reactive({ month: globalOptions.from.getMonth(), year: globalOptions.from.getFullYear() });
+    watch(currentWrapper, (newWrapper) => {
+      if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) { return; }
+      currentMonthAndYear.month = newWrapper.month;
+      currentMonthAndYear.year = newWrapper.year;
+    });
 
     watch(currentMonthAndYear, () => {
-      const currentMonthYearIndex = dateToMonthYear(new Date(currentMonthAndYear.year, currentMonthAndYear.month));
+      const currentMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
       jumpTo(currentMonthYearIndex);
     });
 
-    const days = computed(() => daysByMonths.flatMap(month => month.days));
+    const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
     const computeds = useComputeds(days);
 
     return {

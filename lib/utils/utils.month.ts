@@ -1,4 +1,4 @@
-import { ShallowReactive, shallowReactive } from "vue";
+import { shallowReactive } from "vue";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { copyCalendarDate, ICalendarDate, monthFromMonthYear, yearFromMonthYear } from "../CalendarDate";
 import { Month, NormalizedCalendarOptions } from "../types";
@@ -26,9 +26,9 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
    * @param days Sorted array of CalendarDate
    * @returns Array of months including the month, year and array of CalendarDate for that month
    */
-  function wrapByMonth (days: Array<C>, otherMonthsDays = false): ShallowReactive<Month[]> {
+  function wrapByMonth (days: Array<C>, otherMonthsDays = false): Month[] {
     const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
-    const wrap: ShallowReactive<Month[]> = shallowReactive([]);
+    const wrap: Month[] = shallowReactive([]);
     
     allMonthYearsIndex.forEach((monthYear) => {
       const monthFirstDayIndex = days.findIndex(day => day.monthYearIndex === monthYear);

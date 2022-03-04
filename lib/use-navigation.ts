@@ -1,7 +1,7 @@
-import { computed, ComputedRef, ref } from "vue";
+import { computed, ComputedRef, ref, shallowReactive, ShallowReactive } from "vue";
 import { WrappedDays } from './types';
 
-export function useNavigation<T extends WrappedDays>(daysWrapper: T[], generateWrapper: (wrapperIndex: number, currentWrapper: ComputedRef<T>) => T, infinite = false) {
+export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactive<Array<T>>, generateWrapper: (wrapperIndex: number, currentWrapper: ComputedRef<T>) => T, infinite = false) {
   const currentWrapperIndex = ref(0);
 
   const currentWrapper = computed(() => daysWrapper[currentWrapperIndex.value]);
@@ -17,6 +17,8 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: T[], generateW
   }
   
   function jumpTo (newWrapperIndex: number) {
+    if (newWrapperIndex === currentWrapper.value.index) { return; }
+
     let newIndex = daysWrapper.findIndex(wrap => wrap.index === newWrapperIndex);
     if (infinite && newIndex < 0) {
       const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
@@ -27,7 +29,9 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: T[], generateW
         daysWrapper.push(newWrapper);
         newIndex = daysWrapper.length - 1;
       } else {
-        daysWrapper = [newWrapper];
+        // daysWrapper.length = 0;
+        // daysWrapper = shallowReactive([newWrapper]) as T[];
+        daysWrapper.splice(0, daysWrapper.length, newWrapper);
         newIndex = 0;
       }
     }
