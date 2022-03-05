@@ -1,6 +1,6 @@
 import { Locale } from "date-fns";
 import { ComputedRef, Ref, ShallowReactive } from "vue";
-import { CalendarFactory, ICalendarDate } from "./CalendarDate";
+import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;

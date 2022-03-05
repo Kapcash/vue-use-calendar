@@ -1,6 +1,6 @@
 import { shallowReactive } from "vue";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
-import { copyCalendarDate, ICalendarDate, monthFromMonthYear, yearFromMonthYear } from "../CalendarDate";
+import { copyCalendarDate, ICalendarDate, monthFromMonthYear, yearFromMonthYear } from "../models/CalendarDate";
 import { Month, NormalizedCalendarOptions } from "../types";
 import { generators } from './utils';
 

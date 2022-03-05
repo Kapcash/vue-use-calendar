@@ -1,6 +1,6 @@
 import { NormalizedCalendarOptions } from './../types';
 import { isAfter, isBefore, isSameDay } from "date-fns";
-import { ICalendarDate } from "../CalendarDate";
+import { ICalendarDate } from "../models/CalendarDate";
 
 export function generators<C extends ICalendarDate> (globalOptions: NormalizedCalendarOptions<C>) {
 

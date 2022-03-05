@@ -1,11 +1,11 @@
 import { computed, ref, ShallowReactive } from "vue";
-import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from './types';
-import { disableExtendedDates } from "./utils/utils";
-import { ICalendarDate } from "./CalendarDate";
+import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
+import { disableExtendedDates } from "../utils/utils";
+import { ICalendarDate } from "../models/CalendarDate";
 import { useComputeds, useSelectors } from "./reactiveDates";
 import { endOfWeek, getWeek, startOfWeek } from "date-fns";
 import { useNavigation } from "./use-navigation";
-import { weekGenerators } from "./utils/utils.week";
+import { weekGenerators } from "../utils/utils.week";
 
 const DEFAULT_MONTLY_OPTS: WeeklyOptions = {
   infinite: false,

@@ -1,5 +1,5 @@
 import { endOfWeek, getWeek, startOfWeek } from "date-fns";
-import { ICalendarDate } from "../CalendarDate";
+import { ICalendarDate } from "../models/CalendarDate";
 import { NormalizedCalendarOptions, Week } from "../types";
 import { chunk, generators } from "./utils";
 

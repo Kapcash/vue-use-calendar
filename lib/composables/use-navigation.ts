@@ -1,5 +1,5 @@
-import { computed, ComputedRef, ref, shallowReactive, ShallowReactive } from "vue";
-import { WrappedDays } from './types';
+import { computed, ComputedRef, ref, ShallowReactive } from "vue";
+import { WrappedDays } from '../types';
 
 export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactive<Array<T>>, generateWrapper: (wrapperIndex: number, currentWrapper: ComputedRef<T>) => T, infinite = false) {
   const currentWrapperIndex = ref(0);

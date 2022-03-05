@@ -1,11 +1,11 @@
 import { computed, reactive, ref, ShallowReactive, watch, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from './types';
-import { disableExtendedDates } from "./utils/utils";
-import { dateToMonthYear, ICalendarDate } from "./CalendarDate";
+import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
+import { disableExtendedDates } from "../utils/utils";
+import { dateToMonthYear, ICalendarDate } from "../models/CalendarDate";
 import { useComputeds, useSelectors } from "./reactiveDates";
 import { useNavigation } from "./use-navigation";
-import { monthGenerators } from "./utils/utils.month";
+import { monthGenerators } from "../utils/utils.month";
 
 export function monthlyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
