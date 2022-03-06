@@ -20,11 +20,11 @@ interface CalendarComposable<C extends ICalendarDate> {
   listeners: Listeners<C>;
 }
 
-export interface CalendarOptions<C extends ICalendarDate> {
-  from: DateInput;
+export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
+  from?: DateInput;
   to?: DateInput;
-  disabled: Array<DateInput>;
-  firstDayOfWeek: FirstDayOfWeek;
+  disabled?: Array<DateInput>;
+  firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
   preSelection?: Array<Date> | Date;
   factory?: (date: ICalendarDate) => C;

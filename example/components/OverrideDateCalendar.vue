@@ -44,7 +44,7 @@
 import CalendarPriceCell from './CalendarPriceCell.vue';
 import { CustomDate } from './CustomDate';
 import { useCalendar } from '../../lib/use-calendar';
-import { ICalendarDate } from '../../lib/CalendarDate';
+import { ICalendarDate } from '../../lib/models/CalendarDate';
 import { addDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -74,7 +74,7 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar<CustomDate>({
   },
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days, listeners } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days, listeners } = useMonthlyCalendar({ infinite: false });
 
 const t = days.value[0];
 console.log(t.price);

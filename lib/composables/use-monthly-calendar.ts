@@ -32,8 +32,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     } = useNavigation(
       daysByMonths,
       (newIndex, currentMonth) => {
-        const newMonthYear = newIndex;
-        return generateMonth(newMonthYear, {
+        return generateMonth(newIndex, {
           otherMonthsDays: !!fullWeeks,
           beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [],
           afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [],
@@ -48,7 +47,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       currentMonthAndYear.year = newWrapper.year;
     });
 
-    watch(currentMonthAndYear, () => {
+    watch(currentMonthAndYear, (newCurrentMonth) => {
+      newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       const currentMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
       jumpTo(currentMonthYearIndex);
     });
