@@ -1,4 +1,4 @@
-import { computed, reactive, ref, ShallowReactive, watch, watchEffect } from "vue";
+import { computed, reactive, ShallowReactive, watch, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
 import { disableExtendedDates } from "../utils/utils";
@@ -17,8 +17,6 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       startOfMonth(globalOptions.from || new Date()),
       endOfMonth(globalOptions.to || globalOptions.from || new Date()),
     );
-
-    disableExtendedDates(monthlyDays, globalOptions.from, globalOptions.to);
 
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks) as ShallowReactive<Array<Month<C>>>;
 
@@ -55,6 +53,11 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
 
     const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
     const computeds = useComputeds(days);
+
+    watchEffect(() => {
+      disableExtendedDates(days.value, globalOptions.from, globalOptions.to);
+    });
+
 
     return {
       currentMonth: currentWrapper,
