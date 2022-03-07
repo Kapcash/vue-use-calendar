@@ -1,8 +1,5 @@
 To implement:
 
-* from / to parameters on infinite mode useless? mode "infinite" option to useCalendar?
-* disable all dates outside of from - to range
-* update current year
-
-* test in SSR mode: https://vite-plugin-ssr.com
-* try with a LinkedList implementation
+* fix date selection across multiple years (and preselection when it's not contained in initial dates state)
+* create readme
+* try with a LinkedList implementation (no class instance)
