@@ -58,30 +58,24 @@ const pricesByDay = [
   { day: addDays(new Date(), 6).toLocaleDateString(), price: 50 },
 ];
 
-const { useMonthlyCalendar, useWeekdays } = useCalendar<CustomDate>({
-  from: new Date(),
-  to: addMonths(new Date(), 2),
+const { useMonthlyCalendar, useWeekdays } = useCalendar({
+  minDate: new Date(),
+  maxDate: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
   preSelection: [new Date(), addDays(new Date(), 6)],
   factory: (calendarDate: ICalendarDate) => {
     const priceObj = pricesByDay.find(price => price.day === calendarDate.date.toLocaleDateString());
-    return {
+    const customDate: CustomDate = {
       ...calendarDate,
       price: priceObj?.price || 0,
     };
+    return customDate;
   },
 });
 
-const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, days, listeners } = useMonthlyCalendar({ infinite: false });
-
-const t = days.value[0];
-console.log(t.price);
-
-// days.value.forEach((day) => {
-//   day.price
-// });
+const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners } = useMonthlyCalendar({ infinite: false });
 
 const weekdays = useWeekdays();
 </script>

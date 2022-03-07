@@ -25,7 +25,7 @@ export function generators<C extends ICalendarDate> (globalOptions: NormalizedCa
   }
 
   return {
-    generateConsecutiveDays: generateConsecutiveDays,
+    generateConsecutiveDays,
   };
 }
 
@@ -34,13 +34,12 @@ export function getBetweenDays (pureDates: ICalendarDate[], first: ICalendarDate
   const secondSelectedDayIndex = pureDates.findIndex((day) => isSameDay(day.date, second.date));
   const [lowestDate, greatestDate] = [firstSelectedDayIndex, secondSelectedDayIndex].sort((a, b) => a - b);
   return pureDates.slice(lowestDate + 1, greatestDate);
-  // return firstSelectedDayIndex <= currentSelectedDayIndex ? days.slice(firstSelectedDayIndex + 1, currentSelectedDayIndex) : days.slice(currentSelectedDayIndex + 1, firstSelectedDayIndex);
 }
 
-export function disableExtendedDates (dates: ICalendarDate[], from: Date, to?: Date) {
-  const beforeFromDates = dates.slice(0, dates.findIndex(day => isSameDay(day.date, from)));
+export function disableExtendedDates (dates: ICalendarDate[], from?: Date, to?: Date) {
+  const beforeFromDates = from ? dates.slice(0, dates.findIndex(day => isSameDay(day.date, from))) : [];
   const afterToDates = to ? dates.slice(dates.findIndex(day => isSameDay(day.date, to))) : [];
-  beforeFromDates.concat(afterToDates).forEach(day => {
+  [...beforeFromDates, ...afterToDates].forEach(day => {
     day.disabled.value = true;
   });
 }

@@ -21,8 +21,9 @@ interface CalendarComposable<C extends ICalendarDate> {
 }
 
 export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
-  from?: DateInput;
-  to?: DateInput;
+  startOn?: DateInput;
+  minDate?: DateInput;
+  maxDate?: DateInput;
   disabled?: Array<DateInput>;
   firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
@@ -31,8 +32,9 @@ export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
 }
 
 export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDate> {
-  from: Date;
-  to?: Date;
+  startOn: Date;
+  minDate?: Date;
+  maxDate?: Date;
   disabled: Array<Date>;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;

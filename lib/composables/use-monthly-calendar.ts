@@ -14,8 +14,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     const { infinite = true, fullWeeks = true } = opts;
 
     const monthlyDays = generateConsecutiveDays(
-      startOfMonth(globalOptions.from || new Date()),
-      endOfMonth(globalOptions.to || globalOptions.from || new Date()),
+      startOfMonth(globalOptions.startOn),
+      endOfMonth(globalOptions.maxDate || globalOptions.startOn),
     );
 
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks) as ShallowReactive<Array<Month<C>>>;
@@ -38,7 +38,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       },
       infinite);
 
-    const currentMonthAndYear = reactive({ month: globalOptions.from.getMonth(), year: globalOptions.from.getFullYear() });
+    const currentMonthAndYear = reactive({ month: globalOptions.startOn.getMonth(), year: globalOptions.startOn.getFullYear() });
     watch(currentWrapper, (newWrapper) => {
       if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) { return; }
       currentMonthAndYear.month = newWrapper.month;
@@ -55,9 +55,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     const computeds = useComputeds(days);
 
     watchEffect(() => {
-      disableExtendedDates(days.value, globalOptions.from, globalOptions.to);
+      disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
-
 
     return {
       currentMonth: currentWrapper,

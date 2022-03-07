@@ -56,8 +56,8 @@ const disabledDates = [addDays(new Date(), 10)];
 const firstDayOfWeek = 1;
 
 const { useWeeklyCalendar, useWeekdays } = useCalendar({
-  from: new Date(),
-  to: addDays(new Date(), 26),
+  minDate: new Date(),
+  maxDate: addDays(new Date(), 26),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,

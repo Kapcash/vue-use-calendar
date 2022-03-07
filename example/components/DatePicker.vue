@@ -45,8 +45,8 @@ const preselectionDates = [addDays(new Date(), 5)];
 const firstDayOfWeek = 1;
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
-  from: new Date(),
-  to: addMonths(new Date(), 2),
+  minDate: new Date(),
+  maxDate: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
   preSelection: preselectionDates,

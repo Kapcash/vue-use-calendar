@@ -1,4 +1,4 @@
-import { computed, ref, ShallowReactive } from "vue";
+import { computed, ref, ShallowReactive, watchEffect } from "vue";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
 import { disableExtendedDates } from "../utils/utils";
 import { ICalendarDate } from "../models/CalendarDate";
@@ -18,14 +18,18 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
     const { infinite } = { ...DEFAULT_MONTLY_OPTS, ...opts };
 
     const weeklyDays = generateConsecutiveDays(
-      startOfWeek(globalOptions.from, { weekStartsOn: globalOptions.firstDayOfWeek }),
-      endOfWeek(globalOptions.to!, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      startOfWeek(globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      endOfWeek(globalOptions.maxDate || globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
     );
     
-    disableExtendedDates(weeklyDays, globalOptions.from, globalOptions.to!);
+    disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     
     const daysByWeeks = wrapByWeek(weeklyDays) as ShallowReactive<Week<C>[]>;
     const days = computed(() => daysByWeeks.flatMap(week => week.days));
+
+    watchEffect(() => {
+      disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
+    });
 
     const currentWeekIndex = ref(0);
 

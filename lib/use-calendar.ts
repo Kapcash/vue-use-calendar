@@ -18,12 +18,13 @@ export function useCalendar<C extends ICalendarDate = ICalendarDate> (rawOptions
 }
 
 export function normalizeGlobalParameters<C extends ICalendarDate> (opts: CalendarOptions<C>): NormalizedCalendarOptions<C> {
-  const from: Date = opts.from ? new Date(opts.from) : new Date();
-  const to: Date | undefined = opts.to ? new Date(opts.to) : undefined;
+  const minDate: Date | undefined = opts.minDate ? new Date(opts.minDate) : undefined;
+  const maxDate: Date | undefined = opts.maxDate ? new Date(opts.maxDate) : undefined;
+  const startOn: Date = opts.startOn ? new Date(opts.startOn) : (minDate || new Date());
   const disabled: Date[] = opts.disabled?.map(dis => new Date(dis)) || [];
   const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean) as Array<Date>;
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek: FirstDayOfWeek = opts.firstDayOfWeek || 0;
 
-  return { ...opts, firstDayOfWeek, from, to, disabled, preSelection, factory };
+  return { ...opts, startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory };
 }

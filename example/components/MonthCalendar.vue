@@ -72,8 +72,7 @@ const firstDayOfWeek = 1;
 const years = Array.from(new Array(100)).map((_, i) => 1950 + i);
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
-  from: new Date(),
-  // to: addMonths(new Date(), 2),
+  startOn: new Date(2023, 5, 12),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
