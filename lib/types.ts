@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, Ref, ShallowReactive } from "vue";
+import { ComputedRef, Ref, ShallowRef, ShallowReactive } from "vue";
 import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
@@ -16,7 +16,7 @@ export interface CalendarComposables<C extends ICalendarDate> {
 
 interface CalendarComposable<C extends ICalendarDate> {
   days: ComputedRef<Array<C>>;
-  selectedDates: ComputedRef<Array<C>>;
+  selectedDates: Array<Date>;
   listeners: Listeners<C>;
 }
 
@@ -55,6 +55,10 @@ export interface Listeners<C extends ICalendarDate> {
   selectMultiple: (clickedDate: C) => void;
   hoverMultiple: (hoveredDate: C) => void;
   resetHover: () => void;
+}
+
+export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
+  selection: Array<Date>;
 }
 
 // Month

@@ -30,11 +30,14 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     } = useNavigation(
       daysByMonths,
       (newIndex, currentMonth) => {
-        return generateMonth(newIndex, {
+        const newMonth = generateMonth(newIndex, {
           otherMonthsDays: !!fullWeeks,
-          beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [],
-          afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [],
+          beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [], // Could be avoided with a linked list
+          afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
         });
+        // FIXME: Triggers "selection" reactivity manually
+        selection.splice(0, selection.length, ...selection.reverse());
+        return newMonth;
       },
       infinite);
 
@@ -58,6 +61,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
 
+    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
@@ -67,8 +72,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       prevMonth: prevWrapper,
       prevMonthEnabled: prevWrapperEnabled,
       nextMonthEnabled: nextWrapperEnabled,
-      selectedDates: computeds.selectedDates,
-      listeners: useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates),
+      selectedDates: selection,
+      listeners,
     };
   };
 }

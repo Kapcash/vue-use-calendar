@@ -5,9 +5,9 @@
       Selection:
       <span
         v-for="selected of selectedDates"
-        :key="selected.dayId"
+        :key="selected.getTime()"
       >
-        {{ selected.date.toLocaleDateString() }}
+        {{ selected.toLocaleDateString() }}
       </span>
     </div>
 
@@ -76,11 +76,11 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
-  preSelection: [new Date(), addDays(new Date(), 6)],
+  preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
 });
 
 const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
-
+selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {

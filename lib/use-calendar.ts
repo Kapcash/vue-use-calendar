@@ -1,8 +1,8 @@
-import { generateCalendarFactory, ICalendarDate } from "./models/CalendarDate";
 import { CalendarOptions, CalendarComposables, NormalizedCalendarOptions, FirstDayOfWeek } from './types';
 import { useWeekdays } from "./composables/use-weekdays";
 import { monthlyCalendar } from "./composables/use-monthly-calendar";
 import { weeklyCalendar } from "./composables/use-weekly-calendar";
+import { generateCalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 export function useCalendar<C extends ICalendarDate = ICalendarDate> (rawOptions: CalendarOptions<C>): CalendarComposables<C> {
   const options = normalizeGlobalParameters(rawOptions);
