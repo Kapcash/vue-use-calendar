@@ -71,29 +71,16 @@ export function useSelectors<C extends ICalendarDate> (
   }
 
   function selectSingle(clickedDate: C) {
-    // selectedDates.value.forEach(day => {
-    //   day.isSelected.value = false;
-    // });
-    // clickedDate.isSelected.value = true;
+    const selectedDate = days.value.find(day => isSameDay(day.date, selection[0]));
+    if (selectedDate) {
+      updateSelection(selectedDate);
+    }
     updateSelection(clickedDate);
   }
 
   function selectRange(clickedDate: C) {
-    // betweenDates.value.forEach(day => {
-    //   day.isBetween.value = false;
-    // });
-    
     if (selection.length >= 2 && !clickedDate.isSelected.value) {
       selection.splice(0);
-      // selectedDates.value.forEach((day) => {
-      //   day.isSelected.value = false;
-      // });
-    }
-    
-    if (selectedDates.value.length === 1) {
-      // getBetweenDays(days.value, selectedDates.value[0], clickedDate).forEach(day => {
-      //   day.isBetween.value = true;
-      // });
     }
     
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
