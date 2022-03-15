@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { ICalendarDate } from '../../lib/CalendarDate';
+import { ICalendarDate } from '../../lib/models/CalendarDate';
 
 const props = defineProps({
   day: { type: Object as PropType<ICalendarDate>, required: true },
