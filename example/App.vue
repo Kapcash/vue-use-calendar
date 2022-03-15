@@ -13,20 +13,7 @@
       </select>
     </label>
 
-    <div class="legend">
-      <label>
-        <CalendarCell :day="todayCell" />
-        Today cell
-      </label>
-      <label>
-        <CalendarCell :day="otherMonthCell" />
-        Other month cell
-      </label>
-      <label>
-        <CalendarCell :day="otherMonthCellLinked" />
-        Other month cell linked to another cell
-      </label>
-    </div>
+    <Legend />
 
     <Transition
       name="slide-left"
@@ -41,13 +28,11 @@
 
 <script setup lang="ts">
 import { Ref, ref } from 'vue';
+import Legend from './components/Legend.vue';
 import DatePicker from './components/DatePicker.vue';
 import MonthCalendar from './components/MonthCalendar.vue';
 import WeekCalendar from './components/WeekCalendar.vue';
 import OverrideDateCalendar from './components/OverrideDateCalendar.vue';
-import CalendarCell from './components/CalendarCell.vue';
-import { generateCalendarFactory } from '../lib/models/CalendarDate';
-import { startOfMonth, addMonths } from 'date-fns';
 
 const calendarNames = [DatePicker, MonthCalendar, WeekCalendar, OverrideDateCalendar] as const;
 const options = [
@@ -60,18 +45,6 @@ const options = [
 type CalendarName = typeof calendarNames[number];
 
 const calendarComponent: Ref<CalendarName> = ref(DatePicker);
-
-const calendarFactory = generateCalendarFactory();
-const referenceDay = new Date(2022, 4, 15);
-const todayCell = calendarFactory(referenceDay);
-todayCell.isToday = true;
-
-const otherMonthCell = calendarFactory(startOfMonth(addMonths(referenceDay, 1)));
-otherMonthCell.otherMonth = true;
-
-const otherMonthCellLinked = calendarFactory(otherMonthCell.date);
-otherMonthCellLinked.otherMonth = true;
-otherMonthCellLinked._copied = true;
 </script>
 
 <style>
@@ -84,27 +57,17 @@ otherMonthCellLinked._copied = true;
   margin-top: 60px;
 }
 
+select {
+  border-radius: 4px;
+  padding: 4px;
+  border-color: #858585;
+}
+
 .column {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-}
-
-.legend {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-
-  background-color: rgb(241, 241, 241);
-  padding: 16px;
-}
-
-.legend > * {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
 }
 
 .slide-left-enter-active,
