@@ -16,12 +16,14 @@
     "dist"
   ],
   "scripts": {
-    "test": "jest",
-    "example": "vite example",
+    "test": "vitest",
     "build": "tsup lib/index.ts --format esm,cjs --dts",
     "prepublishOnly": "npm run build",
     "lint": "eslint --ext .ts,.js,.vue .",
-    "lint:fix": "eslint --ext .ts,.js,.vue --fix ."
+    "lint:fix": "eslint --ext .ts,.js,.vue --fix .",
+    "dev:example": "vite example",
+    "build:example": "vite build example",
+    "start:example": "vite preview example"
   },
   "repository": {
     "type": "git",
