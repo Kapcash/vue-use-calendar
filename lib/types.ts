@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, Ref, ShallowRef, ShallowReactive } from "vue";
+import { ComputedRef, Ref, ShallowReactive } from "vue";
 import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
