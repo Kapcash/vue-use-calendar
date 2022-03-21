@@ -3,7 +3,7 @@ import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Wee
 import { disableExtendedDates } from "../utils/utils";
 import { ICalendarDate } from "../models/CalendarDate";
 import { useComputeds, useSelectors } from "./reactiveDates";
-import { endOfWeek, getWeek, startOfWeek } from "date-fns";
+import { endOfWeek, startOfWeek } from "date-fns";
 import { useNavigation } from "./use-navigation";
 import { weekGenerators } from "../utils/utils.week";
 
@@ -45,6 +45,7 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       infinite);
 
     const computeds = useComputeds(days);
+    const { selection, ...selectors } = useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
 
     return {
       currentWeek: currentWrapper,
@@ -55,8 +56,8 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       prevWeek: prevWrapper,
       prevWeekEnabled: prevWrapperEnabled,
       nextWeekEnabled: nextWrapperEnabled,
-      selectedDates: computeds.selectedDates,
-      listeners: useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates),
+      selectedDates: selection,
+      listeners: selectors,
     };
   };
 }
