@@ -23,7 +23,8 @@
     "lint:fix": "eslint --ext .ts,.js,.vue --fix .",
     "dev:example": "vite example",
     "build:example": "vite build example",
-    "start:example": "vite preview example"
+    "start:example": "vite preview example",
+    "deploy:example": "push-dir --dir=example/dist --branch=gh-pages --cleanup"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,7 @@
     "@vue/server-renderer": "^3.2.31",
     "eslint": "^8.5.0",
     "eslint-plugin-vue": "^8.2.0",
+    "push-dir": "^0.4.1",
     "tsup": "^5.12.1",
     "typescript": "^4.5.5",
     "vite": "^2.8.4",
