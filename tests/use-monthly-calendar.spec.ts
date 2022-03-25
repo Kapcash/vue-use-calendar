@@ -18,7 +18,7 @@ import { areConsecutiveDays } from './helpers';
  *  27 28 29 30 31      
 */
 const mockToday = new Date(2022, 2, 8);
-const defaultOptions = { from: new Date(2022, 2, 15) };
+const defaultOptions = { minDate: new Date(2022, 2, 15) };
 const defaultMonthlyOptions: MontlyOptions = { fullWeeks: false, infinite: true };
 
 // Avoid inconsistent tests depending on the day
@@ -41,14 +41,14 @@ describe('use-monthly-calendar', () => {
 
     expect(isRef(currentMonth)).toBeTruthy();
     expect(currentMonthAndYear).toEqual({
-      year: defaultOptions.from.getFullYear(),
-      month: defaultOptions.from.getMonth(),
+      year: defaultOptions.minDate.getFullYear(),
+      month: defaultOptions.minDate.getMonth(),
     });
     expect(isRef(days)).toBeTruthy();
     expect(areConsecutiveDays(days.value)).toBeTruthy();
 
-    expect(isRef(selectedDates)).toBeTruthy();
-    expect(selectedDates.value).toHaveLength(0);
+    expect(isReactive(selectedDates)).toBeTruthy();
+    expect(selectedDates).toHaveLength(0);
 
     expect(isShallow(months)).toBeTruthy();
     expect(isReactive(currentMonthAndYear)).toBeTruthy();
@@ -69,17 +69,17 @@ describe('use-monthly-calendar', () => {
 
     expect(isRef(currentMonth)).toBeTruthy();
     expect(currentMonth.value).toMatchObject({
-      month: defaultOptions.from!.getMonth(),
-      year: defaultOptions.from!.getFullYear(),
-      index: dateToMonthYear(defaultOptions.from!),
+      month: defaultOptions.minDate!.getMonth(),
+      year: defaultOptions.minDate!.getFullYear(),
+      index: dateToMonthYear(defaultOptions.minDate!),
       days: expect.any(Array),
     });
-    expect(currentMonth.value.days).toHaveLength(getDaysInMonth(defaultOptions.from));
+    expect(currentMonth.value.days).toHaveLength(getDaysInMonth(defaultOptions.minDate));
     expect(areConsecutiveDays(currentMonth.value.days)).toBeTruthy();
 
     expect(isReactive(currentMonthAndYear)).toBeTruthy();
-    expect(currentMonthAndYear.year).toEqual(defaultOptions.from!.getFullYear());
-    expect(currentMonthAndYear.month).toEqual(defaultOptions.from!.getMonth());
+    expect(currentMonthAndYear.year).toEqual(defaultOptions.minDate!.getFullYear());
+    expect(currentMonthAndYear.month).toEqual(defaultOptions.minDate!.getMonth());
   });
 
   it('should return the initial current month object with fullWeeks on', () => {
@@ -127,9 +127,9 @@ describe('use-monthly-calendar', () => {
     const nbMonths = [1, 3, 15];
     
     nbMonths.forEach((nbMonth) => {
-      const toDate = (nbMonth - 1) <= 0 ? undefined : addMonths(defaultOptions.from!, nbMonth - 1);
+      const toDate = (nbMonth - 1) <= 0 ? undefined : addMonths(defaultOptions.minDate!, nbMonth - 1);
 
-      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, to: toDate });
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate: toDate });
       const { currentMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
       it(`should generate ${nbMonth} amount of month wrappers`, () => {
@@ -140,7 +140,7 @@ describe('use-monthly-calendar', () => {
         const { days } = currentMonth.value;
     
         const firstEnabledDay = days.find(day => !day.disabled.value);
-        expect(firstEnabledDay?.date).toEqual(defaultOptions.from!);
+        expect(firstEnabledDay?.date).toEqual(defaultOptions.minDate!);
       });
     
       it('should have only one day marked as today', () => {
@@ -169,8 +169,8 @@ describe('use-monthly-calendar', () => {
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
       expect(currentMonthAndYear).toEqual({
-        month: defaultOptions.from!.getMonth(),
-        year: defaultOptions.from!.getFullYear(),
+        month: defaultOptions.minDate!.getMonth(),
+        year: defaultOptions.minDate!.getFullYear(),
       });
   
       nextMonth();
@@ -181,8 +181,8 @@ describe('use-monthly-calendar', () => {
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
       expect(currentMonthAndYear).toEqual({
-        month: defaultOptions.from!.getMonth() + 1,
-        year: defaultOptions.from!.getFullYear(),
+        month: defaultOptions.minDate!.getMonth() + 1,
+        year: defaultOptions.minDate!.getFullYear(),
       });
     });
   
@@ -194,8 +194,8 @@ describe('use-monthly-calendar', () => {
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
       expect(currentMonthAndYear).toEqual({
-        month: defaultOptions.from!.getMonth(),
-        year: defaultOptions.from!.getFullYear(),
+        month: defaultOptions.minDate!.getMonth(),
+        year: defaultOptions.minDate!.getFullYear(),
       });
   
       prevMonth();
@@ -206,8 +206,8 @@ describe('use-monthly-calendar', () => {
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
       expect(currentMonthAndYear).toEqual({
-        month: defaultOptions.from!.getMonth() - 1,
-        year: defaultOptions.from!.getFullYear(),
+        month: defaultOptions.minDate!.getMonth() - 1,
+        year: defaultOptions.minDate!.getFullYear(),
       });
     });
 
@@ -267,13 +267,13 @@ describe('use-monthly-calendar', () => {
       const { currentMonth, prevMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
       expect(months).toHaveLength(1);
-      expect(months[0]).toMatchObject({ month: defaultOptions.from!.getMonth(), year: defaultOptions.from!.getFullYear() });
+      expect(months[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
       
       prevMonth();
       await nextTick();
       
       expect(months).toHaveLength(2);
-      expect(currentMonth.value).toMatchObject({ month: defaultOptions.from!.getMonth() - 1, year: defaultOptions.from!.getFullYear() });
+      expect(currentMonth.value).toMatchObject({ month: defaultOptions.minDate!.getMonth() - 1, year: defaultOptions.minDate!.getFullYear() });
       expect(months[0]).toBe(currentMonth.value);
     });
     
@@ -282,13 +282,13 @@ describe('use-monthly-calendar', () => {
       const { currentMonth, nextMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
       expect(months).toHaveLength(1);
-      expect(months[0]).toMatchObject({ month: defaultOptions.from!.getMonth(), year: defaultOptions.from!.getFullYear() });
+      expect(months[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
       
       nextMonth();
       await nextTick();
       
       expect(months).toHaveLength(2);
-      expect(currentMonth.value).toMatchObject({ month: defaultOptions.from!.getMonth() + 1, year: defaultOptions.from!.getFullYear() });
+      expect(currentMonth.value).toMatchObject({ month: defaultOptions.minDate!.getMonth() + 1, year: defaultOptions.minDate!.getFullYear() });
       expect(months[months.length - 1]).toBe(currentMonth.value);
     });
 
@@ -306,7 +306,7 @@ describe('use-monthly-calendar', () => {
       
       expect(months).toHaveLength(1 + nextMonthsToGenerate);
 
-      const targetYear = defaultOptions.from!.getFullYear() - 10;
+      const targetYear = defaultOptions.minDate!.getFullYear() - 10;
       const targetMonth = currentMonthAndYear.month;
       currentMonthAndYear.year = targetYear;
       await nextTick();
@@ -402,7 +402,7 @@ describe('use-monthly-calendar', () => {
       });
       
       it('should allow next month if the next month exists', () => {
-        const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, to: addMonths(defaultOptions.from!, 3)});
+        const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate: addMonths(defaultOptions.minDate!, 3)});
         const { prevMonthEnabled, nextMonthEnabled } = useMonthlyCalendar(noAutoGenerationOptions);
         
         expect(prevMonthEnabled.value).toBeFalsy();
@@ -410,7 +410,7 @@ describe('use-monthly-calendar', () => {
       });
   
       it('should allow prev month if the prev month exists', () => {
-        const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, to: addMonths(defaultOptions.from!, 2)});
+        const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate: addMonths(defaultOptions.minDate!, 2)});
         const { prevMonthEnabled, nextMonthEnabled, nextMonth } = useMonthlyCalendar(noAutoGenerationOptions);
         
         expect(prevMonthEnabled.value).toBeFalsy();
@@ -437,8 +437,8 @@ describe('use-monthly-calendar', () => {
   
         prevMonth();
   
-        expect(currentMonthAndYear.month).toEqual(defaultOptions.from!.getMonth());
-        expect(currentMonthAndYear.year).toEqual(defaultOptions.from!.getFullYear());
+        expect(currentMonthAndYear.month).toEqual(defaultOptions.minDate!.getMonth());
+        expect(currentMonthAndYear.year).toEqual(defaultOptions.minDate!.getFullYear());
       });
   
       it('should not do anything to call nextMonth if not allowed', () => {
@@ -449,8 +449,8 @@ describe('use-monthly-calendar', () => {
   
         nextMonth();
   
-        expect(currentMonthAndYear.month).toEqual(defaultOptions.from!.getMonth());
-        expect(currentMonthAndYear.year).toEqual(defaultOptions.from!.getFullYear());
+        expect(currentMonthAndYear.month).toEqual(defaultOptions.minDate!.getMonth());
+        expect(currentMonthAndYear.year).toEqual(defaultOptions.minDate!.getFullYear());
       });
     });
   });
