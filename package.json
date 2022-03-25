@@ -1,5 +1,5 @@
 {
-  "name": "use-calendar",
+  "name": "vue-use-calendar",
   "version": "0.0.0",
   "license": "MIT",
   "description": "Calendar & dates composables for Vue 3.",
@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kapcash/use-calendar"
+    "url": "https://github.com/kapcash/vue-use-calendar"
   },
   "author": {
     "name": "Kapcash",

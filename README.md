@@ -11,7 +11,7 @@ A vue 3 composable to create any kind of calendar!
 
 This can be used to hold the dates logic for your calendar components.
 
-\>\>\> See the [DEMO](https://vue-use-calendar.github.com) <<<
+\>\>\> See the [DEMO](https://kapcash.github.io/vue-use-calendar/) <<<
 
 ```typescript
 // Considering today is the 15th of March 2022
