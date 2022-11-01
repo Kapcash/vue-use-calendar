@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, ref } from 'vue';
+import { Ref, shallowRef } from 'vue';
 import Legend from './components/Legend.vue';
 import DatePicker from './components/DatePicker.vue';
 import MonthCalendar from './components/MonthCalendar.vue';
@@ -44,7 +44,7 @@ const options = [
 
 type CalendarName = typeof calendarNames[number];
 
-const calendarComponent: Ref<CalendarName> = ref(DatePicker);
+const calendarComponent: Ref<CalendarName> = shallowRef(MonthCalendar);
 </script>
 
 <style>

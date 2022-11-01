@@ -79,9 +79,11 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
       lastWeek.forEach(day => { day._copied = day.otherMonth; });
       lastWeekCopy.forEach(day => { day.otherMonth = !day.otherMonth; day._copied = day.otherMonth; });
 
-      const howManyDaysDuplicated = 7 - daysToComplete[0].date.getDay() + globalOptions.firstDayOfWeek;
-      beforeDays = lastWeekCopy;
-      daysToComplete.splice(0, howManyDaysDuplicated);
+      const howManyDaysDuplicated = (7 - daysToComplete[0].date.getDay() + globalOptions.firstDayOfWeek) % 7;
+      if (howManyDaysDuplicated > 0) {
+        beforeDays = lastWeekCopy;
+        daysToComplete.splice(0, howManyDaysDuplicated);
+      }
     } else {
       const beforeTo = daysToComplete[0].date;
       const beforeFrom = startOfWeek(beforeTo, { weekStartsOn: globalOptions.firstDayOfWeek });
@@ -100,9 +102,11 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
       nextWeek.forEach(day => { day._copied = day.otherMonth; });
       nextWeekCopy.forEach(day => { day.otherMonth = !day.otherMonth; day._copied = day.otherMonth; });
       
-      const howManyDaysDuplicated = (daysToComplete[daysToComplete.length - 1].date.getDay() + globalOptions.firstDayOfWeek - 1) % 7;
-      afterDays = nextWeekCopy;
-      daysToComplete.splice(-howManyDaysDuplicated, howManyDaysDuplicated);
+      const howManyDaysDuplicated = (daysToComplete[daysToComplete.length - 1].date.getDay() - globalOptions.firstDayOfWeek + 1) % 7;
+      if (howManyDaysDuplicated > 0) {
+        afterDays = nextWeekCopy;
+        daysToComplete.splice(-howManyDaysDuplicated, howManyDaysDuplicated);
+      }
     } else {
       const afterFrom = daysToComplete[daysToComplete.length - 1];
       const afterTo = endOfWeek(afterFrom!.date, { weekStartsOn: globalOptions.firstDayOfWeek });
