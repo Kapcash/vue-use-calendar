@@ -72,14 +72,14 @@ const firstDayOfWeek = 1;
 const years = Array.from(new Array(100)).map((_, i) => 1950 + i);
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
-  startOn: new Date(2023, 5, 12),
+  startOn: new Date(2027, 0, 12),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
   preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
 });
 
-const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
+const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true, fullWeeks: true, fixedWeeks: true });
 selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
 const weekdays = useWeekdays();
 
