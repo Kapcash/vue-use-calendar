@@ -11,14 +11,14 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
   const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
 
   return function useMonthlyCalendar(opts: MontlyOptions = {}): MonthlyCalendarComposable<C> {
-    const { infinite = true, fullWeeks = true } = opts;
+    const { infinite = true, fullWeeks = true, fixedWeeks = false } = opts;
 
     const monthlyDays = generateConsecutiveDays(
       startOfMonth(globalOptions.startOn),
       endOfMonth(globalOptions.maxDate || globalOptions.startOn),
     );
 
-    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks) as ShallowReactive<Array<Month<C>>>;
+    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, fixedWeeks) as ShallowReactive<Array<Month<C>>>;
 
     const {
       currentWrapper,
@@ -29,9 +29,10 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       nextWrapperEnabled,
     } = useNavigation(
       daysByMonths,
-      (newIndex, currentMonth) => {
+      (newIndex) => {
         const newMonth = generateMonth(newIndex, {
           otherMonthsDays: !!fullWeeks,
+          fixedWeeks: !!fixedWeeks,
           beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [], // Could be avoided with a linked list
           afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
         });

@@ -66,6 +66,7 @@ export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
 export interface MontlyOptions {
   infinite?: boolean;
   fullWeeks?: boolean;
+  fixedWeeks?: boolean;
 }
 
 export interface WrappedDays<C extends ICalendarDate = ICalendarDate> {

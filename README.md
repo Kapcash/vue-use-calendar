@@ -123,15 +123,15 @@ The composable returns the following sub-composables
 ```typescript
 const { useMontlyCalendar } = useCalendar()
 
-const { currentMonth } = useMonthlyCalendar({ infinite: false, fullWeeks: false })
+const { currentMonth } = useMonthlyCalendar({ infinite: false, fullWeeks: false, fixedWeeks: false })
 ```
 
 ### Parameters
-
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
-| infinite  | `boolean` | true | `true` | Indicates if navigating throught the calendar should generate new months on the fly |
-| fullWeeks | `boolean` | true | `true` | Indicates if each month should display the "other month" days to complete each week |
+| infinite   | `boolean` | true | `true`  | Indicates if navigating throught the calendar should generate new months on the fly                                     |
+| fullWeeks  | `boolean` | true | `true`  | Indicates if each month should display the "other month" days to complete each week                                     |
+| fixedWeeks | `boolean` | true | `false` | Indicates if each month should display the "other month" days to display a fixed number of weeks in the month (6 weeks) |
 
 ### Outputs
 
