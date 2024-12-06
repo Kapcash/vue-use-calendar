@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fr } from 'date-fns/locale';
-import { FirstDayOfWeek } from './../lib/types';
+import { FirstDayOfWeek } from '../lib/types';
 import { useCalendar } from '../lib/use-calendar';
 
-const defaultOptions = { from: new Date() };
+const defaultOptions = { startOn: new Date() };
 
 describe('use-weekdays', () => {
   it('should returns 7 days', () => {

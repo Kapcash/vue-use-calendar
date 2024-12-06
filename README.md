@@ -29,12 +29,12 @@ yarn add vue-use-calendar
 // Considering today is the 15th of March 2022
 const { useMontlyCalendar } = useCalendar()
 const {
-  nextMonth,
-  prevMonth,
-  currentMonthAndYear,
-  currentMonth,
-  selectedDates,
-  listeners,
+    nextMonth,
+    prevMonth,
+    currentMonthAndYear,
+    currentMonth,
+    selectedDates,
+    listeners,
 } = useMonthlyCalendar({ fullWeeks: false, infinite: true });
 
 /*
@@ -70,26 +70,25 @@ import { isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const pricesByDay = [
-      { price: 55, date: '2022-05-12' },
+    { price: 55, date: '2022-05-12' },
 ]
 
 const { useMontlyCalendar } = useCalendar({
-      startOn: new Date(2025, 5, 1),
-      minDate: '2025-05-12',
-      maxDate: new Date(2025, 5, 18),
-      disabled: [new Date(2025, 5, 15)],
-      firstDayOfWeek: 1, // Monday
-      locale: es, // Spanish
-      preSelection: [new Date(2025, 5, 13)],
-      factory: (calendarDate) => {
-            // Extends the generated date by adding the associated price
-            const correspondingPrice = pricesByDay.find(({ date }) => isSameDay(date, calendarDate.date));
-            const customDate: CustomDate = {
-                  ...calendarDate,
-                  price: correspondingPrice?.price || 0,
-            };
-            return customDate;
-      }
+    startOn: new Date(2025, 5, 1),
+    minDate: '2025-05-12',
+    maxDate: new Date(2025, 5, 18),
+    disabled: [new Date(2025, 5, 15)],
+    firstDayOfWeek: 1, // Monday
+    locale: es, // Spanish
+    preSelection: [new Date(2025, 5, 13)],
+    factory: (calendarDate: CalendarDate) => {
+        const newDate = new DatePrice(calendarDate);
+        
+        const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
+        newDate.price = priceObj?.price || 0;
+
+        return newDate;
+    },
 })
 
 const { currentMonth } = useMontlyCalendar()
@@ -106,7 +105,7 @@ const { currentMonth } = useMontlyCalendar()
 | firstDayOfWeek | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6`    | true | `0`         | Tells on which day the week starts. 0 being Sunday. |
 | locale        | date-fns's `Locale`                   | true | `undefined` | The locale object to use for translating weekdays.<br>Import like `import { fr } from 'date-fns/locale';`. See [date-fns](https://date-fns.org/v2.28.0/docs/Locale) |
 | preSelection  | `Array\<Date> \| Date`                | true | `[]` | A date or array of date to be preselected on calendar generation |
-| factory       | `(date: ICalendarDate) => \<extends ICalendarDate\>` | true | `undefined` | A custom factory function to extend the default `ICalendarDate` objects. See [exemple](TODO example link) |
+| factory       | `(date: CalendarDate) => \<extends CalendarDate\>` | true | `undefined` | A custom factory function to extend the default `CalendarDate` objects. See [exemple](TODO example link) |
 
 ### Outputs
 
@@ -487,23 +486,33 @@ You can provide an optional custom function in the `useCalendar` composable to a
 ```typescript
 // Imagine you have this kind of array somewhere in your app / components
 const pricesByDay = [
-      { price: 55, date: '2022-05-12' },
+    { price: 55, date: '2022-05-12' },
 ]
+
+// You need to create a custom class, inheriting the library's inner Date class.
+export class CustomDate extends CalendarDate {
+  price: number = 0;
+
+  constructor(...args: DateConstructorParameters) {
+    super(...args);
+    this.price = 0;
+  }
+}
 
 // If you want the calendar to use this object, you can provide a function to make the mapping yourself.
 
 const { useMontlyCalendar } = useCalendar({
-      factory: (calendarDate) => {
-            // Find the price object related to the generated date
-            const correspondingPrice = pricesByDay.find(({ date }) => isSameDay(date, calendarDate.date));
-            // Creates a custom date object, with an additionnal `price` property.
-            const customDate: CustomDate = {
-                  ...calendarDate,
-                  price: correspondingPrice?.price || 0,
-            };
-            // Return the new object date created from the original one + the price
-            return customDate;
-      }
+    factory: (calendarDate) => {
+        // Find the price object related to the generated date
+        const correspondingPrice = pricesByDay.find(({ date }) => isSameDay(date, calendarDate));
+        // Creates a custom date object, with an additionnal `price` property.
+        const customDate: CustomDate = {
+                ...calendarDate,
+                price: correspondingPrice?.price || 0,
+        };
+        // Return the new object date created from the original one + the price
+        return customDate;
+    }
 })
 ```
 

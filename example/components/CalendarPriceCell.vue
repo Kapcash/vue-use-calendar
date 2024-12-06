@@ -12,7 +12,7 @@
       :disabled="props.day.disabled.value"
       @click="$emit('click')"
     > 
-      <p>{{ props.day.date.getDate() }}</p>
+      <p>{{ props.day.getDate() }}</p>
       <p
         v-if="props.day.price"
         class="price"

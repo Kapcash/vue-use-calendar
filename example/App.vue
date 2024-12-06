@@ -44,7 +44,7 @@ const options = [
 
 type CalendarName = typeof calendarNames[number];
 
-const calendarComponent: Ref<CalendarName> = shallowRef(MonthCalendar);
+const calendarComponent: Ref<CalendarName> = shallowRef(DatePicker);
 </script>
 
 <style>

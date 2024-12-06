@@ -1,6 +1,10 @@
 import { computed, ComputedRef, ref, ShallowReactive } from "vue";
 import { WrappedDays } from '../types';
 
+/** Gives methods to move the current dates view backward and forward.
+ * @param daysWrapper - The existing dates views (months, weeks, ...) to navigate.
+ * @param generateWrapper - A function that generates a new dates view.
+ */
 export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactive<Array<T>>, generateWrapper: (wrapperIndex: number, currentWrapper: ComputedRef<T>) => T, infinite = false) {
   const currentWrapperIndex = ref(0);
 

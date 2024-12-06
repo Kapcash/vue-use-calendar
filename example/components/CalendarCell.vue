@@ -17,17 +17,17 @@
       :disabled="props.day.disabled.value"
       @click="$emit('click')"
     > 
-      {{ props.day.date.getDate() }}
+      {{ props.day.getDate() }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { ICalendarDate } from '../../lib/models/CalendarDate';
+import { CalendarDate } from '../../lib/models/CalendarDate';
 
 const props = defineProps({
-  day: { type: Object as PropType<ICalendarDate>, required: true },
+  day: { type: Object as PropType<CalendarDate>, required: true },
 });
 
 defineEmits({

@@ -1,5 +1,10 @@
-import { ICalendarDate } from '../../lib/models/CalendarDate';
+import { CalendarDate, DateConstructorParameters } from '../../lib/models/CalendarDate';
 
-export interface CustomDate extends ICalendarDate {
-  price: number;
+export class CustomDate extends CalendarDate {
+  price: number = 0;
+
+  constructor(...args: DateConstructorParameters) {
+    super(...args);
+    this.price = 0;
+  }
 }

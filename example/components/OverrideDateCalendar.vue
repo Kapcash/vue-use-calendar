@@ -44,9 +44,9 @@
 import CalendarPriceCell from './CalendarPriceCell.vue';
 import { CustomDate } from './CustomDate';
 import { useCalendar } from '../../lib/use-calendar';
-import { ICalendarDate } from '../../lib/models/CalendarDate';
+import { CalendarDate } from '../../lib/models/CalendarDate';
 import { addDays, addMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { enGB } from 'date-fns/locale';
 
 const disabledDates = [addDays(new Date(), 10)];
 
@@ -63,15 +63,15 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   maxDate: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
-  locale: fr,
+  locale: enGB,
   preSelection: [new Date(), addDays(new Date(), 6)],
-  factory: (calendarDate: ICalendarDate) => {
-    const priceObj = pricesByDay.find(price => price.day === calendarDate.date.toLocaleDateString());
-    const customDate: CustomDate = {
-      ...calendarDate,
-      price: priceObj?.price || 0,
-    };
-    return customDate;
+  factory: (calendarDate: CalendarDate) => {
+    const newDate = new CustomDate(calendarDate);
+    
+    const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
+    newDate.price = priceObj?.price || 0;
+
+    return newDate;
   },
 });
 
