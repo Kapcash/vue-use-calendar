@@ -1,24 +1,42 @@
-import { computed, reactive, ShallowReactive, watch, watchEffect } from "vue";
+import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
-import { disableExtendedDates } from "../utils/utils";
-import { dateToMonthYear, ICalendarDate } from "../models/CalendarDate";
-import { useComputeds, useSelectors } from "./reactiveDates";
+import { Month, MonthlyCalendarComposable, MontlyOptions, NormalizedCalendarOptions } from '../types';
+import { dateToMonthYear, disableOutOfRangeDates } from "../utils/utils";
+import { CalendarDate } from "../models/CalendarDate";
+import { useDaysComputeds, useSelectors } from "./reactiveDates";
 import { useNavigation } from "./use-navigation";
 import { monthGenerators } from "../utils/utils.month";
 
-export function monthlyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
+export function monthlyCalendar<C extends CalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
 
   return function useMonthlyCalendar(opts: MontlyOptions = {}): MonthlyCalendarComposable<C> {
     const { infinite = true, fullWeeks = true } = opts;
 
-    const monthlyDays = generateConsecutiveDays(
+    // Generate all Dates from startOn to maxDate
+    const monthlyDays: C[] = generateConsecutiveDays(
       startOfMonth(globalOptions.startOn),
       endOfMonth(globalOptions.maxDate || globalOptions.startOn),
     );
 
-    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks) as ShallowReactive<Array<Month<C>>>;
+    // Wrap the Dates by month
+    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks);
+
+    const days = computed(() => daysByMonths.flatMap(month => month.days));
+    const computeds = useDaysComputeds(days);
+
+    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+
+    function createNewMonthWrapper (newIndex: number, _currentMonth: ComputedRef<Month<C>>) {
+      const newMonth = generateMonth(newIndex, {
+        otherMonthsDays: !!fullWeeks,
+        beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [], // Could be avoided with a linked list
+        afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
+      });
+      // FIXME: Triggers "selection" reactivity manually
+      selection.splice(0, selection.length, ...selection.reverse());
+      return newMonth;
+    }
 
     const {
       currentWrapper,
@@ -27,41 +45,28 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       prevWrapper,
       prevWrapperEnabled,
       nextWrapperEnabled,
-    } = useNavigation(
-      daysByMonths,
-      (newIndex, currentMonth) => {
-        const newMonth = generateMonth(newIndex, {
-          otherMonthsDays: !!fullWeeks,
-          beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [], // Could be avoided with a linked list
-          afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
-        });
-        // FIXME: Triggers "selection" reactivity manually
-        selection.splice(0, selection.length, ...selection.reverse());
-        return newMonth;
-      },
-      infinite);
+    } = useNavigation(daysByMonths, createNewMonthWrapper, infinite);
 
+    /** Reactive state of the currently displayed month */
     const currentMonthAndYear = reactive({ month: globalOptions.startOn.getMonth(), year: globalOptions.startOn.getFullYear() });
+
+    // If the current wrapper changes, update the current month and year
     watch(currentWrapper, (newWrapper) => {
       if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) { return; }
       currentMonthAndYear.month = newWrapper.month;
       currentMonthAndYear.year = newWrapper.year;
     });
 
+    // If this property changes, jump to the new month
     watch(currentMonthAndYear, (newCurrentMonth) => {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
-      const currentMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
-      jumpTo(currentMonthYearIndex);
+      const newMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
+      jumpTo(newMonthYearIndex);
     });
-
-    const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
-    const computeds = useComputeds(days);
 
     watchEffect(() => {
-      disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
+      disableOutOfRangeDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
-
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
 
     return {
       currentMonth: currentWrapper,

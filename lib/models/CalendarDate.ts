@@ -1,64 +1,73 @@
 import { isToday } from "date-fns";
 import { Ref, ref } from "vue";
+import { dateToMonthYear } from "../utils/utils";
 
-export interface ICalendarDate {
-  readonly date: Date;
-  otherMonth: boolean;
-  disabled: Ref<boolean>;
-  isSelected: Ref<boolean>;
-  isBetween: Ref<boolean>;
-  isHovered: Ref<boolean>;
-
-  isToday: boolean;
-  isWeekend: boolean;
+export class CalendarDate extends Date {
+  /** True if the date is from an adjacent month of the currently shown month */
+  otherMonth: boolean = false;
+  /** True if the date is not selectionable */
+  disabled: Ref<boolean> = ref(false);
+  /** True when the date is currently selected */
+  isSelected: Ref<boolean> = ref(false);
+  /** True when the date is between two selected dates */
+  isBetween: Ref<boolean> = ref(false);
+  /** True when the date is currently hovered */
+  isHovered: Ref<boolean> = ref(false);
   
-  monthYearIndex: number;
-  dayId: string;
+  _copied: boolean = false;
 
-  _copied: boolean;
-}
+  constructor(...args: DateConstructorParameters) {
+    // @ts-expect-error
+    super(...args);
+  }
 
-export type CalendarFactory<C extends ICalendarDate> = (...args: any[]) => C;
+  /** True if the date is the current date */
+  get isToday(): boolean {
+    return isToday(this);
+  }
 
-export function generateCalendarFactory<C extends ICalendarDate> (customFactory?: (c: ICalendarDate) => C) {
-  const extendFactory = customFactory || ((c: ICalendarDate) => c as C);
-  return function (...args: any[]): C {
-    // @ts-ignore
-    const date = new Date(...args);
-    const weekDay = date.getDay();
-    return extendFactory({
-      date,
-      isToday: isToday(date),
-      isWeekend: weekDay === 0 || weekDay > 6,
-      otherMonth: false,
-      disabled: ref(false),
-      isSelected: ref(false),
-      isBetween: ref(false),
-      isHovered: ref(false),
-      monthYearIndex: dateToMonthYear(date),
-      dayId: [date.getFullYear(), date.getMonth(), date.getDate()].join('-'),
-      _copied: false,
-    });
-  };
-}
+  get isWeekend(): boolean {
+    const weekDay = this.getDay();
+    return weekDay === 0 || weekDay > 6;
+  }
 
-/** Return a shallow copy that will keep the same property ref pointers */
-export function copyCalendarDate<C extends ICalendarDate> (date: C): C {
-  return { ...date, _copied: true };
-}
+  get monthYearIndex(): MonthYear {
+    return dateToMonthYear(this);
+  }
 
-export function dateToMonthYear(dateOrYear: Date | number, month?: number) {
-  if (typeof dateOrYear === 'number') {
-    return dateOrYear * 12 + (month || 0);
-  } else {
-    return dateOrYear.getFullYear() * 12 + dateOrYear.getMonth();
+  get dayId(): string {
+    return [this.getFullYear(), this.getMonth(), this.getDate()].join('-');
+  }
+
+  public copy () {
+    const dateCopy = new CalendarDate(this);
+    Object.assign(dateCopy, this);
+    dateCopy._copied = true;
+    return dateCopy;
   }
 }
 
-export function yearFromMonthYear(monthYear: number) {
-  return Math.floor(monthYear / 12);
+/**
+ * 
+ * @param customFactory Optional factory function to use a custom implementation of the CalendarDate class
+ * @returns A factory function that generates a CalendarDate instance and optionally extends it with the custom factory parameter.
+ */
+export function generateCalendarFactory<C extends CalendarDate> (customFactory?: (c: CalendarDate) => C): CalendarFactory<C> {
+  const extendFactory = customFactory || ((c: CalendarDate) => c as C);
+  return function (...args: DateConstructorParameters): C {
+    const date = new CalendarDate(...args);
+    return extendFactory(date);
+  };
 }
 
-export function monthFromMonthYear(monthYear: number) {
-  return monthYear % 12;
-}
+export type DateConstructorParameters = 
+  | ConstructorParameters<new () => Date>               // No arguments
+  | ConstructorParameters<new (value: Date) => Date>    // Date argument (copy)
+  | ConstructorParameters<new (value: number) => Date>  // Number argument (timestamp)
+  | ConstructorParameters<new (value: string) => Date>  // String argument (ISO string)
+  | ConstructorParameters<new (...args: [number, number, number, number?, number?, number?, number?]) => Date>; // Multiple numbers
+
+export type CalendarFactory<C extends CalendarDate> = (...args: DateConstructorParameters) => C;
+
+/** Unique index of a month. Two consecutive months will have a consecutive "MonthYear" index. */
+export type MonthYear = number;

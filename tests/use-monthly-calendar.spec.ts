@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDaysInMonth, addMonths, endOfMonth, isSameDay } from 'date-fns';
 import { isReactive, isRef, isShallow, nextTick } from 'vue';
-import { dateToMonthYear } from '../lib/models/CalendarDate';
 import { MontlyOptions } from '../lib/types';
 import { useCalendar } from '../lib/use-calendar';
 import { areConsecutiveDays } from './helpers';
+import { dateToMonthYear } from '../lib/utils/utils';
 
 /*
  * $ cal -H 2022-03-15
@@ -102,16 +102,17 @@ describe('use-monthly-calendar', () => {
 
     const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
     const { days } = currentMonth.value;
-    const { date, isToday, otherMonth, disabled, isSelected, isBetween, isHovered, monthYearIndex, dayId } = days[0];
+    const firstDay = days[0];
+    const { isToday, otherMonth, disabled, isSelected, isBetween, isHovered, monthYearIndex, dayId } = days[0];
 
     expect(isRef(isToday)).toBeFalsy();
     expect(isToday).toBeFalsy();
     expect(isRef(otherMonth)).toBeFalsy();
     expect(isToday).toBeFalsy();
     expect(isRef(monthYearIndex)).toBeFalsy();
-    expect(monthYearIndex).toEqual(dateToMonthYear(date));
+    expect(monthYearIndex).toEqual(dateToMonthYear(firstDay));
     expect(isRef(dayId)).toBeFalsy();
-    expect(dayId).toEqual(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+    expect(dayId).toEqual(`${firstDay.getFullYear()}-${firstDay.getMonth()}-${firstDay.getDate()}`);
 
     expect(isRef(disabled)).toBeTruthy();
     expect(disabled.value).toBeTruthy();
@@ -140,7 +141,8 @@ describe('use-monthly-calendar', () => {
         const { days } = currentMonth.value;
     
         const firstEnabledDay = days.find(day => !day.disabled.value);
-        expect(firstEnabledDay?.date).toEqual(defaultOptions.minDate!);
+        expect(firstEnabledDay).not.toBeUndefined();
+        expect(isSameDay(firstEnabledDay!, defaultOptions.minDate!)).toBeTruthy();
       });
     
       it('should have only one day marked as today', () => {
@@ -154,8 +156,9 @@ describe('use-monthly-calendar', () => {
         const { days } = currentMonth.value;
     
         const todayDay = days.find(day => day.isToday);
-        expect(todayDay?.isToday).toBeTruthy();
-        expect(todayDay?.date).toEqual(mockToday);
+        expect(todayDay).not.toBeUndefined();
+        expect(todayDay!.isToday).toBeTruthy();
+        expect(isSameDay(todayDay!, mockToday)).toBeTruthy();
       });
     });
   });
@@ -223,8 +226,8 @@ describe('use-monthly-calendar', () => {
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
     });
 
     it('should update current month when mutation current *month* directly', async () => {
@@ -239,8 +242,8 @@ describe('use-monthly-calendar', () => {
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
     });
 
     it('should update current month & year when mutation current *month & year* directly', async () => {
@@ -256,8 +259,8 @@ describe('use-monthly-calendar', () => {
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
     });
   });
 
@@ -326,7 +329,7 @@ describe('use-monthly-calendar', () => {
         expect(months).toHaveLength(1);
 
         const endOfMonthDate = endOfMonth(new Date(currentMonthAndYear.year, currentMonthAndYear.month));
-        const lastDayOfCurrentMonthIndex = currentMonth.value.days.findIndex((calendarDay) => isSameDay(calendarDay.date, endOfMonthDate));
+        const lastDayOfCurrentMonthIndex = currentMonth.value.days.findIndex((calendarDay) => isSameDay(calendarDay, endOfMonthDate));
 
         const otherMonthDays = currentMonth.value.days.slice(lastDayOfCurrentMonthIndex + 1);
         otherMonthDays.forEach((otherMonthDay) => {
@@ -341,11 +344,11 @@ describe('use-monthly-calendar', () => {
         const lastWeekNextMonth = months[0].days.slice(-7);
 
         firstWeekCurrentMonth.forEach((day, i) => {
-          expect(day.otherMonth).toEqual(day.date.getMonth() !== currentMonth.value.month);
+          expect(day.otherMonth).toEqual(day.getMonth() !== currentMonth.value.month);
           expect(day._copied).toEqual(day.otherMonth);
 
           const originalEquivalentDay = lastWeekNextMonth[i];
-          expect(isSameDay(originalEquivalentDay.date, day.date)).toBeTruthy();
+          expect(isSameDay(originalEquivalentDay, day)).toBeTruthy();
           expect(originalEquivalentDay?._copied).toEqual(originalEquivalentDay.otherMonth);
           expect(day.isSelected).toBe(originalEquivalentDay?.isSelected);
           expect(day.isBetween).toBe(originalEquivalentDay?.isBetween);
@@ -374,11 +377,11 @@ describe('use-monthly-calendar', () => {
         const firstWeekNextMonth = months[1].days.slice(0, 7);
 
         lastWeekCurrentMonth.forEach((day, i) => {
-          expect(day.otherMonth).toEqual(day.date.getMonth() !== currentMonth.value.month);
+          expect(day.otherMonth).toEqual(day.getMonth() !== currentMonth.value.month);
           expect(day._copied).toEqual(day.otherMonth);
 
           const originalEquivalentDay = firstWeekNextMonth[i];
-          expect(isSameDay(originalEquivalentDay.date, day.date)).toBeTruthy();
+          expect(isSameDay(originalEquivalentDay, day)).toBeTruthy();
           expect(originalEquivalentDay?._copied).toEqual(originalEquivalentDay.otherMonth);
           expect(day.isSelected).toBe(originalEquivalentDay?.isSelected);
           expect(day.isBetween).toBe(originalEquivalentDay?.isBetween);

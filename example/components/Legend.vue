@@ -22,13 +22,12 @@ import { generateCalendarFactory } from '../../lib/models/CalendarDate';
 
 const calendarFactory = generateCalendarFactory();
 const referenceDay = new Date(2022, 4, 15);
-const todayCell = calendarFactory(referenceDay);
-todayCell.isToday = true;
+const todayCell = calendarFactory(new Date());
 
 const otherMonthCell = calendarFactory(startOfMonth(addMonths(referenceDay, 1)));
 otherMonthCell.otherMonth = true;
 
-const otherMonthCellLinked = calendarFactory(otherMonthCell.date);
+const otherMonthCellLinked = calendarFactory(otherMonthCell);
 otherMonthCellLinked.otherMonth = true;
 otherMonthCellLinked._copied = true;
 </script>
