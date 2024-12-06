@@ -29,6 +29,7 @@ const config = {
     'vue/no-v-html': 0,
     'no-inner-declarations': 0,
     semi: 0,
+    '@typescript-eslint/no-inferrable-types': 0,
     '@typescript-eslint/semi': ['error', 'always'],
     "@typescript-eslint/member-delimiter-style": 2,
     'comma-dangle': ['error', 'always-multiline'],

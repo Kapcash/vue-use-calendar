@@ -6,7 +6,7 @@
       v-for="selected of selectedDates"
       :key="selected.dayId"
     >
-      {{ selected.date.toLocaleDateString() }}
+      {{ selected.toLocaleDateString() }}
     </span>
 
     <div class="month">
@@ -49,7 +49,7 @@
 import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { enGB } from 'date-fns/locale';
 
 const disabledDates = [addDays(new Date(), 10)];
 
@@ -60,7 +60,7 @@ const { useWeeklyCalendar, useWeekdays } = useCalendar({
   maxDate: addDays(new Date(), 26),
   disabled: disabledDates,
   firstDayOfWeek,
-  locale: fr,
+  locale: enGB,
   preSelection: [addDays(new Date(), 2)],
 });
 

@@ -1,8 +1,8 @@
 import { computed, ref, ShallowReactive, watchEffect } from "vue";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
-import { disableExtendedDates } from "../utils/utils";
-import { ICalendarDate } from "../models/CalendarDate";
-import { useComputeds, useSelectors } from "./reactiveDates";
+import { disableOutOfRangeDates } from "../utils/utils";
+import { CalendarDate } from "../models/CalendarDate";
+import { useDaysComputeds, useSelectors } from "./reactiveDates";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { useNavigation } from "./use-navigation";
 import { weekGenerators } from "../utils/utils.week";
@@ -11,7 +11,7 @@ const DEFAULT_MONTLY_OPTS: WeeklyOptions = {
   infinite: false,
 };
 
-export function weeklyCalendar<C extends ICalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
+export function weeklyCalendar<C extends CalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
   const { generateConsecutiveDays, wrapByWeek, generateWeek } = weekGenerators(globalOptions);
 
   return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<C> {
@@ -22,13 +22,13 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       endOfWeek(globalOptions.maxDate || globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
     );
     
-    disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
+    disableOutOfRangeDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     
     const daysByWeeks = wrapByWeek(weeklyDays) as ShallowReactive<Week<C>[]>;
     const days = computed(() => daysByWeeks.flatMap(week => week.days));
 
     watchEffect(() => {
-      disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
+      disableOutOfRangeDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
 
     const currentWeekIndex = ref(0);
@@ -44,7 +44,7 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       },
       infinite);
 
-    const computeds = useComputeds(days);
+    const computeds = useDaysComputeds(days);
     const { selection, ...selectors } = useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
 
     return {

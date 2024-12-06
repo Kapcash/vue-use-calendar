@@ -1,6 +1,6 @@
 import { Locale } from "date-fns";
 import { ComputedRef, Ref, ShallowReactive } from "vue";
-import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
+import { CalendarFactory, CalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -8,19 +8,19 @@ export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 
 
 // Calendar
 
-export interface CalendarComposables<C extends ICalendarDate> {
+export interface CalendarComposables<C extends CalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
 }
 
-interface CalendarComposable<C extends ICalendarDate> {
+interface CalendarComposable<C extends CalendarDate> {
   days: ComputedRef<Array<C>>;
-  selectedDates: Array<Date>;
+  selectedDates: Array<C>;
   listeners: Listeners<C>;
 }
 
-export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
+export interface CalendarOptions<C extends CalendarDate = CalendarDate> {
   startOn?: DateInput;
   minDate?: DateInput;
   maxDate?: DateInput;
@@ -28,10 +28,10 @@ export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
   firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
   preSelection?: Array<Date> | Date;
-  factory?: (date: ICalendarDate) => C;
+  factory?: (date: CalendarDate) => C;
 }
 
-export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDate> {
+export interface NormalizedCalendarOptions<C extends CalendarDate = CalendarDate> {
   startOn: Date;
   minDate?: Date;
   maxDate?: Date;
@@ -42,14 +42,15 @@ export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDa
   factory: CalendarFactory<C>;
 }
 
-export interface Computeds<C extends ICalendarDate> {
+export interface Computeds<C extends CalendarDate> {
+  /** All the dates, without the copies */
   pureDates: ComputedRef<C[]>;
   selectedDates: ComputedRef<C[]>;
   hoveredDates: ComputedRef<C[]>;
   betweenDates: ComputedRef<C[]>;
 }
 
-export interface Listeners<C extends ICalendarDate> {
+export interface Listeners<C extends CalendarDate> {
   selectSingle: (clickedDate: C) => void;
   selectRange: (clickedDate: C) => void;
   selectMultiple: (clickedDate: C) => void;
@@ -57,8 +58,8 @@ export interface Listeners<C extends ICalendarDate> {
   resetHover: () => void;
 }
 
-export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
-  selection: Array<Date>;
+export interface Selectors<C extends CalendarDate> extends Listeners<C> {
+  selection: Array<C>;
 }
 
 // Month
@@ -68,17 +69,34 @@ export interface MontlyOptions {
   fullWeeks?: boolean;
 }
 
-export interface WrappedDays<C extends ICalendarDate = ICalendarDate> {
+export interface WrappedDays<C extends CalendarDate = CalendarDate> {
   days: Array<C>;
   index: number;
 }
 
-export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
+export class Month<C extends CalendarDate = CalendarDate> implements WrappedDays<C> {
+  days: Array<C> = [];
   month: number;
   year: number;
+  index: number;
+
+  constructor (month: number, year: number, days: Array<C>) {
+    this.month = month;
+    this.year = year;
+    this.index = month + year * 12;
+    this.days = days;
+  }
+
+  public isAfter(anotherMonth: Month): boolean {
+    return this.year > anotherMonth.year || (this.year === anotherMonth.year && this.month > anotherMonth.month);
+  }
+  
+  public isBefore(anotherMonth: Month): boolean {
+    return this.year < anotherMonth.year || (this.year === anotherMonth.year && this.month < anotherMonth.month);
+  }
 }
 
-export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
+export interface MonthlyCalendarComposable<C extends CalendarDate> extends CalendarComposable<C> {
   currentMonthAndYear: ShallowReactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<C>>;
   months: ShallowReactive<Month<C>[]>;
@@ -90,13 +108,13 @@ export interface MonthlyCalendarComposable<C extends ICalendarDate> extends Cale
 
 // Week
 
-export interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
+export interface Week<C extends CalendarDate = CalendarDate> extends WrappedDays<C> {
   weekNumber: number;
   month: number;
   year: number;
 }
 
-export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
+export interface WeeklyCalendarComposable<C extends CalendarDate> extends CalendarComposable<C> {
   weeks: Array<Week<C>>;
   currentWeekIndex: Ref<number>;
   currentWeek: ComputedRef<Week<C>>;

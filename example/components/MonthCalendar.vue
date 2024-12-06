@@ -11,7 +11,9 @@
       </span>
     </div>
 
-    <button @click="goToCurrentMonth">Today</button>
+    <button @click="goToCurrentMonth">
+      Today
+    </button>
     <select v-model="currentMonthAndYear.year">
       <option
         v-for="year in years"
@@ -65,6 +67,7 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { CalendarDate } from '../../lib/models/CalendarDate';
 
 const disabledDates = [addDays(new Date(), 12)];
 const firstDayOfWeek = 1;
@@ -80,7 +83,7 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
 });
 
 const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
-selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
+selectedDates.splice(0, selectedDates.length, ...[new CalendarDate(2023, 5, 15), addDays(new CalendarDate(2023, 5, 15), 6) as CalendarDate]);
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {
