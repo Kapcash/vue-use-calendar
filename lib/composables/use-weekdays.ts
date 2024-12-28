@@ -1,7 +1,7 @@
 import { addDays, format, nextSunday } from 'date-fns';
-import { WeekdaysComposable, WeekdayInputFormat, NormalizedCalendarOptions } from '../types';
+import { GeneratorComposable, WeekdayInputFormat, NormalizedCalendarOptions } from '../types';
 
-export function useWeekdays ({ firstDayOfWeek, locale }: NormalizedCalendarOptions): (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable {
+export function useWeekdays ({ firstDayOfWeek, locale }: NormalizedCalendarOptions): (weekdayFormat?: WeekdayInputFormat) => GeneratorComposable {
   return (weekdayFormat: WeekdayInputFormat = 'iiiii'): Array<string> => {
     const sunday = nextSunday(new Date());
     const weekdays = Array.from(Array(7).keys()).map(i => addDays(sunday, i));
