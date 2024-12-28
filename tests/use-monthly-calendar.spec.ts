@@ -47,8 +47,8 @@ describe('use-monthly-calendar', () => {
     expect(isRef(days)).toBeTruthy();
     expect(areConsecutiveDays(days.value)).toBeTruthy();
 
-    expect(isReactive(selectedDates)).toBeTruthy();
-    expect(selectedDates).toHaveLength(0);
+    expect(isRef(selectedDates)).toBeTruthy();
+    expect(selectedDates.value).toHaveLength(0);
 
     expect(isShallow(months)).toBeTruthy();
     expect(isReactive(currentMonthAndYear)).toBeTruthy();
