@@ -23,8 +23,10 @@ export function normalizeGlobalParameters<C extends CalendarDate> (opts: Calenda
   const maxDate: Date | undefined = opts.maxDate ? new Date(opts.maxDate) : undefined;
   const startOn: Date = opts.startOn ? new Date(opts.startOn) : (minDate || new Date());
   const disabled: Date[] = opts.disabled?.map(dis => new Date(dis)) || [];
-  const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean) as Array<Date>;
   const factory = generateCalendarFactory(opts.factory);
+  const preSelection: C[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection])
+    .filter(Boolean)
+    .map(date => factory(date!));
   const firstDayOfWeek: FirstDayOfWeek = opts.firstDayOfWeek || 0;
 
   return { ...opts, startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory };
