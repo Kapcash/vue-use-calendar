@@ -56,7 +56,7 @@ describe('use-monthly-calendar', () => {
     expect(isRef(nextMonthEnabled)).toBeTruthy();
 
     expect(listeners).toBeTypeOf('object');
-    expect(Object.keys(listeners)).toEqual(expect.arrayContaining(['selectSingle', 'selectRange', 'selectMultiple', 'hoverMultiple', 'resetHover']));
+    expect(Object.keys(listeners)).toEqual(expect.arrayContaining(['selectSingle', 'selectRange', 'selectMultiple', 'hoverRange', 'resetHover']));
     Object.values(listeners).forEach((listener) => {
       expect(listener).toBeTypeOf('function');
     });

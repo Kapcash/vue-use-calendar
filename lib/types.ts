@@ -59,7 +59,7 @@ export interface Listeners<C extends CalendarDate> {
   selectSingle: (clickedDate: C) => void;
   selectRange: (clickedDate: C) => void;
   selectMultiple: (clickedDate: C) => void;
-  hoverMultiple: (hoveredDate: C) => void;
+  hoverRange: (hoveredDate: C) => void;
   resetHover: () => void;
 }
 
