@@ -1,4 +1,4 @@
-import { computed, ComputedRef, reactive, watch } from 'vue';
+import { computed, ComputedRef, Ref, ref, watch } from 'vue';
 import { isAfter, isBefore, isSameDay } from 'date-fns';
 import { CalendarDate } from "../models/CalendarDate";
 import { Selectors, Computeds } from "../types";
@@ -40,33 +40,38 @@ export function useDaysComputeds<C extends CalendarDate> (days: ComputedRef<C[]>
  * Manages selection and hover states for calendar dates.
  * @template C - A type that extends CalendarDate.
  * @param {ComputedRef<C[]>} currentViewDays - Array of calendar dates.
- * @param {ComputedRef<C[]>} selectedDates - Array of selected calendar dates.
  * @param {ComputedRef<C[]>} betweenDates - Array of dates between selected dates.
  * @param {ComputedRef<C[]>} hoveredDates - Array of hovered calendar dates.
  * @returns {Selectors<C>} The methods for selecting and hovering dates, and the current selection.
  */
 export function useSelectors<C extends CalendarDate> (
   currentViewDays: ComputedRef<C[]>,
-  selectedDates: ComputedRef<C[]>,
   betweenDates: ComputedRef<C[]>,
   hoveredDates: ComputedRef<C[]>,
+  preSelection: C[] = [],
 ): Selectors<C> {
+
   /** List of currently selected dates.
    * This cannot be a computed over the `currentViewDays` because a date can be selected without being in the current view.
    * i.e. if we select a date then jump to another month / year, the `currentViewDays` will only contain
    * the dates from that month / year, so it won't include the first selected date.
    */
-  const selection: Array<C> = reactive([]);
+  const selection = ref<Array<C>>(preSelection);
 
-  watch(selection, () => {
-    currentViewDays.value.forEach((day) => {
-      // TODO Optimize to avoid full array loop
-      day.isSelected.value = selection.some(selected => isSameDay(selected, day));
-    });
+  watch(() => selection.value, (newSelection) => {
+    const normalizedSelectedDates = normalizeDates(newSelection);
+    setSelectedDates(normalizedSelectedDates);
+    setBetweenDates(normalizedSelectedDates);
+  }, { immediate: true });
 
-    if (selection.length >= 2) {
-      const [lowestSelection, highestSelection] = selection.sort((a, b) => a.getTime() - b.getTime());
-      
+  function normalizeDates<D extends Date> (dates: D[]): C[] {
+    return dates.map(date => new CalendarDate(date) as C); // FIXME: use custom factory
+  }
+
+  function setBetweenDates(selectionDates: C[]) {
+    if (selectionDates.length >= 2) {
+      const [lowestSelection, highestSelection] = selectionDates.sort((a, b) => a.getTime() - b.getTime());
+
       const firstDay = currentViewDays.value[0];
       const lastDay = currentViewDays.value[currentViewDays.value.length - 1];
       const lowestDay = isBefore(firstDay, lowestSelection) ? null : firstDay;
@@ -84,18 +89,25 @@ export function useSelectors<C extends CalendarDate> (
         betweenDate.isBetween.value = false;
       });
     }
-  });
+  }
+
+  function setSelectedDates(selectionDates: C[]) {
+    currentViewDays.value.forEach((day) => {
+      // TODO Optimize to avoid full array loop
+      day.isSelected.value = selectionDates.some(selected => isSameDay(selected, day));
+    });
+  }
 
   /**
    * Updates the selection state for a given calendar date.
    * @param {C} calendarDate - The calendar date to update the selection for.
    */
   function updateSelection (calendarDate: C) {
-    const selectedDateIndex = selection.findIndex(date => isSameDay(calendarDate, date));
+    const selectedDateIndex = selection.value.findIndex(date => isSameDay(calendarDate, date));
     if (selectedDateIndex >= 0) {
-      selection.splice(selectedDateIndex, 1);
+      selection.value.splice(selectedDateIndex, 1);
     } else {
-      selection.push(calendarDate);
+      selection.value.push(calendarDate as any);
     }
   }
 
@@ -104,7 +116,7 @@ export function useSelectors<C extends CalendarDate> (
    * @param {C} clickedDate - The date that was clicked.
    */
   function selectSingle(clickedDate: C) {
-    const selectedDate = currentViewDays.value.find(day => isSameDay(day, selection[0]));
+    const selectedDate = currentViewDays.value.find(day => isSameDay(day, selection.value[0]));
     if (selectedDate) {
       updateSelection(selectedDate);
     }
@@ -116,8 +128,8 @@ export function useSelectors<C extends CalendarDate> (
    * @param {C} clickedDate - The date that was clicked.
    */
   function selectRange(clickedDate: C) {
-    if (selection.length >= 2 && !clickedDate.isSelected.value) {
-      selection.splice(0);
+    if (selection.value.length >= 2 && !clickedDate.isSelected.value) {
+      selection.value.splice(0);
     }
     
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
@@ -138,13 +150,13 @@ export function useSelectors<C extends CalendarDate> (
    * @param {C} hoveredDate - The date that is being hovered over.
    */
   function hoverRange(hoveredDate: C) {
-    if (selection.length !== 1) { return; }
+    if (selection.value.length !== 1) { return; }
 
     hoveredDates.value.forEach((day) => {
       day.isHovered.value = false;
     });
     
-    const betweenDates = getBetweenDays(currentViewDays.value, selection[0], hoveredDate);
+    const betweenDates = getBetweenDays(currentViewDays.value, selection.value[0] as C, hoveredDate);
     betweenDates.forEach(day => {
       day.isHovered.value = true;
     });
@@ -161,6 +173,7 @@ export function useSelectors<C extends CalendarDate> (
   }
 
   return {
+    // @ts-ignore
     selection,
     selectSingle,
     selectRange,
