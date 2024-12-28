@@ -137,7 +137,7 @@ export function useSelectors<C extends CalendarDate> (
    * Set the dates between the selected date and the hovered date as hovered.
    * @param {C} hoveredDate - The date that is being hovered over.
    */
-  function hoverMultiple(hoveredDate: C) {
+  function hoverRange(hoveredDate: C) {
     if (selection.length !== 1) { return; }
 
     hoveredDates.value.forEach((day) => {
@@ -165,7 +165,7 @@ export function useSelectors<C extends CalendarDate> (
     selectSingle,
     selectRange,
     selectMultiple,
-    hoverMultiple,
+    hoverRange,
     resetHover,
   };
 }

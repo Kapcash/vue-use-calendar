@@ -32,7 +32,7 @@
           :key="day.dayId"
           :day="day"
           @click="listeners.selectRange(day)"
-          @mouseover="listeners.hoverMultiple(day)"
+          @mouseover="listeners.hoverRange(day)"
           @mouseleave="listeners.resetHover()"
         />
       </div>
