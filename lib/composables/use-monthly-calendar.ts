@@ -25,7 +25,7 @@ export function monthlyCalendar<C extends CalendarDate>(globalOptions: Normalize
     const days = computed(() => daysByMonths.flatMap(month => month.days));
     const computeds = useDaysComputeds(days);
 
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.betweenDates, computeds.hoveredDates, globalOptions.preSelection);
 
     function createNewMonthWrapper (newIndex: number, _currentMonth: ComputedRef<Month<C>>) {
       const newMonth = generateMonth(newIndex, {
@@ -34,7 +34,7 @@ export function monthlyCalendar<C extends CalendarDate>(globalOptions: Normalize
         afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
       });
       // FIXME: Triggers "selection" reactivity manually
-      selection.splice(0, selection.length, ...selection.reverse());
+      // selection.value.splice(0, selection.length, ...selection.reverse());
       return newMonth;
     }
 

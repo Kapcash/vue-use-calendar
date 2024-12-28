@@ -69,26 +69,23 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDate } from '../../lib/models/CalendarDate';
 
-const disabledDates = [addDays(new Date(), 12)];
+const now = new Date();
+const disabledDates = [addDays(now, 12)];
 const firstDayOfWeek = 1;
 
-// const years = Array.from(new Array(100)).map((_, i) => 1950 + i);
-
 const { useMonthlyCalendar, useWeekdays, useMonthsList, useYearsList } = useCalendar({
-  startOn: new Date(2023, 5, 12),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: enGB,
-  preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
+  preSelection: [addDays(now, 2), addDays(now, 4)],
 });
 
 const months = useMonthsList();
 const years = useYearsList();
 
 const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
-selectedDates.splice(0, selectedDates.length, ...[new CalendarDate(2023, 5, 15), addDays(new CalendarDate(2023, 5, 15), 6) as CalendarDate]);
+// selectedDates.value.splice(0, selectedDates.value.length, ...[new CalendarDate(2023, 5, 15), addDays(new CalendarDate(2023, 5, 15), 6) as CalendarDate]);
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {

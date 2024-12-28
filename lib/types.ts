@@ -21,7 +21,7 @@ export interface CalendarComposables<C extends CalendarDate> {
 
 interface CalendarComposable<C extends CalendarDate> {
   days: ComputedRef<Array<C>>;
-  selectedDates: Array<C>;
+  selectedDates: Ref<Array<C>>;
   listeners: Listeners<C>;
 }
 
@@ -32,7 +32,7 @@ export interface CalendarOptions<C extends CalendarDate = CalendarDate> {
   disabled?: Array<DateInput>;
   firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
-  preSelection?: Array<Date> | Date;
+  preSelection?: Array<Date | C> | Date | C;
   factory?: (date: CalendarDate) => C;
 }
 
@@ -43,7 +43,7 @@ export interface NormalizedCalendarOptions<C extends CalendarDate = CalendarDate
   disabled: Array<Date>;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
-  preSelection: Array<Date>;
+  preSelection: Array<C>;
   factory: CalendarFactory<C>;
 }
 
@@ -64,7 +64,7 @@ export interface Listeners<C extends CalendarDate> {
 }
 
 export interface Selectors<C extends CalendarDate> extends Listeners<C> {
-  selection: Array<C>;
+  selection: Ref<Array<C>>;
 }
 
 // Month
