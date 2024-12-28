@@ -461,25 +461,25 @@ All days marked as `hovered` are reset to normal state
 
 # How does it work?
 
-Each date is represented by a custom object called `CalendarDate`.
+Each date is represented by a custom Date implementation called `CalendarDate`.
+It inherits the vanilla `Date` class, so it's fully compatible with any library and code using it.
 
 ## CalendarDate object
 
 |    Property     |      Type       |   Description    |
 |-----------------|-----------------|------------------|
-| date            | `Date`          | The real javascript `Date` object |
-| isToday         | `boolean`       | True if is the same day as today  |
-| isWeekend       | `boolean`       | True if is saturday or sunday     |
-| otherMonth      | `boolean`       | True if the date is included      |
-| disabled        | `Ref<boolean>`  | Reactive boolean if the date is disabled |
-| isSelected      | `Ref<boolean>`  | Reactive boolean if the date is selected |
-| isBetween       | `Ref<boolean>`  | Reactive boolean if the date is between two selected dates |
-| isHovered       | `Ref<boolean>`  | Reactive boolean if the date is currently hovered |
+| isToday         | `boolean`       | True if is the same day as today. Readonly.  |
+| isWeekend       | `boolean`       | True if is saturday or sunday. Readonly.     |
+| otherMonth      | `boolean`       | True if the date is included in the current month view. |
+| disabled        | `Ref<boolean>`  | Reactive boolean if the date is disabled. |
+| isSelected      | `Ref<boolean>`  | Reactive boolean if the date is selected. |
+| isBetween       | `Ref<boolean>`  | Reactive boolean if the date is between two selected dates. |
+| isHovered       | `Ref<boolean>`  | Reactive boolean if the date is currently hovered. |
 | monthYearIndex  | `number`        | The date's month index. See [What's the monthYear index?](#user-content-whats-the-monthyear-index) |
-| dayId           | `${year}-${month}-${day}` | A string representing a uniq id for this day. In the form `${year}-${month}-${day}`. Mainly used internally. |
-| _copied         | `boolean`       | True if the day is a copy from another day. See [## Linked dates](#user-content-linked-dates) |
+| dayId           | `${year}-${month}-${day}` | A string representing a uniq id for this day. In the form `${year}-${month}-${day}`. Used internally. |
+| _copied         | `boolean`       | True if the day is a copy from another day. See [## Linked dates](#user-content-linked-dates). Used internally. |
 
-## Extending the `CalendarDate` objects
+### Extending the `CalendarDate` objects
 
 You can provide an optional custom function in the `useCalendar` composable to add extra properties to your date objects.
 
@@ -490,7 +490,7 @@ const pricesByDay = [
 ]
 
 // You need to create a custom class, inheriting the library's inner Date class.
-export class CustomDate extends CalendarDate {
+export class DatePrice extends CalendarDate {
   price: number = 0;
 
   constructor(...args: DateConstructorParameters) {
@@ -503,15 +503,16 @@ export class CustomDate extends CalendarDate {
 
 const { useMontlyCalendar } = useCalendar({
     factory: (calendarDate) => {
-        // Find the price object related to the generated date
-        const correspondingPrice = pricesByDay.find(({ date }) => isSameDay(date, calendarDate));
-        // Creates a custom date object, with an additionnal `price` property.
-        const customDate: CustomDate = {
-                ...calendarDate,
-                price: correspondingPrice?.price || 0,
-        };
-        // Return the new object date created from the original one + the price
-        return customDate;
+        // 1. Create an instance of your custom Date class, copied from the given date.
+        const newDate = new DatePrice(calendarDate);
+
+        // 2. Update its attributes howerever you like.
+        // Here we find then set the price of the date.
+        const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
+        newDate.price = priceObj?.price || 0;
+
+        // 3. Return the new date instance. The composable will be using this one now.
+        return newDate;
     }
 })
 ```
@@ -566,6 +567,17 @@ There are **linked.**
 So when the date 30 in "March 2022" is selected, so is the [30th] in "April 2022".
 
 > Technical note: A date linked to another is marked by the internal attribute `_copied`
+
+## How does the "navigation" between dates wrappers (months, weeks) work?
+
+When using a wrapped view of the calendar (by months or weeks), the composable returns specific methods to switch between views (go to prev/next months or weeks).
+To avoid generating too much data, it actually only renders the dates of the current view.
+
+So if you're seeing the month of May 2022, the current dates array will only have this month's dates.
+If you switch to another month, let's say September 2026, it will generates the dates for that month and remove the previous ones.
+
+This is done to avoid having all the dates between the initial date and the ones we navigate to.
+Imagine you're on May 2022 and jump to May 2026, we don't need to generate all the dates in between as it would consume too much memory.
 
 # Contributing
 
