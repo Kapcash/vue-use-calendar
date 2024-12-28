@@ -1,17 +1,22 @@
 import { Locale } from "date-fns";
 import { ComputedRef, Ref, ShallowReactive } from "vue";
 import { CalendarFactory, CalendarDate } from "./models/CalendarDate";
+import { useYearsList } from "./composables/use-years-list";
+import { useMonthsList } from "./composables/use-months-list";
+import { useWeekdays } from "./composables/use-weekdays";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
-
-// Calendar
+export type MonthInputFormat = 'M' | 'Mo' | 'MM' | 'MMM' | 'MMMM' | 'MMMMM' | 'Month' | 'Lo' | 'LL' | 'LLL' | 'LLLL' | 'LLLLL';
+export type YearInputFormat = `y${string}` | `Y${string}` | `R${string}` | `u${string}`;
 
 export interface CalendarComposables<C extends CalendarDate> {
-  useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
+  useWeekdays: ReturnType<typeof useWeekdays>;
+  useMonthsList: ReturnType<typeof useMonthsList>;
+  useYearsList: ReturnType<typeof useYearsList>;
 }
 
 interface CalendarComposable<C extends CalendarDate> {
@@ -128,4 +133,4 @@ export interface WeeklyOptions {
   infinite?: boolean;
 }
 
-export type WeekdaysComposable = Array<string>;
+export type GeneratorComposable = Array<string>;

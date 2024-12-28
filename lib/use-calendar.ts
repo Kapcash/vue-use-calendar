@@ -3,6 +3,8 @@ import { useWeekdays } from "./composables/use-weekdays";
 import { monthlyCalendar } from "./composables/use-monthly-calendar";
 import { weeklyCalendar } from "./composables/use-weekly-calendar";
 import { generateCalendarFactory, CalendarDate } from "./models/CalendarDate";
+import { useMonthsList } from './composables/use-months-list';
+import { useYearsList } from './composables/use-years-list';
 
 export function useCalendar<C extends CalendarDate = CalendarDate> (rawOptions: CalendarOptions<C>): CalendarComposables<C> {
   const options = normalizeGlobalParameters(rawOptions);
@@ -11,6 +13,8 @@ export function useCalendar<C extends CalendarDate = CalendarDate> (rawOptions: 
     useMonthlyCalendar: monthlyCalendar(options),
     useWeeklyCalendar: weeklyCalendar(options),
     useWeekdays: useWeekdays(options),
+    useMonthsList: useMonthsList(options),
+    useYearsList: useYearsList(options),
   };
 }
 
