@@ -45,7 +45,7 @@ export function weeklyCalendar<C extends CalendarDate>(globalOptions: Normalized
       infinite);
 
     const computeds = useDaysComputeds(days);
-    const { selection, ...selectors } = useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+    const { selection, ...selectors } = useSelectors(days, computeds.betweenDates, computeds.hoveredDates);
 
     return {
       currentWeek: currentWrapper,
