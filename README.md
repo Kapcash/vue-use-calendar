@@ -381,7 +381,7 @@ Selecting an already selected date reset its state
 ```
 </details>
 
-### `hoverMultiple`
+### `hoverRange`
 
 Set the hover status on all dates between the first selected date and the one passed in parameter.
 It can be used to style the dates in between two selected dates while you hover them.
@@ -391,7 +391,7 @@ It can be used to style the dates in between two selected dates while you hover 
 
 ```typescript
 const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { hoverMultiple } } = useMonthlyCalendar()
+const { currentMonth, listeners: { hoverRange } } = useMonthlyCalendar()
 
 /*
          March 2022     
@@ -403,8 +403,8 @@ const { currentMonth, listeners: { hoverMultiple } } = useMonthlyCalendar()
  27  28  29  30  31 
 */
 
-hoverMultiple(currentMonth.days[10])
-hoverMultiple(currentMonth.days[20])
+hoverRange(currentMonth.days[10])
+hoverRange(currentMonth.days[20])
 
 /*
 All the days between the 11th and 21st are marked as `hovered`
@@ -428,10 +428,10 @@ Reset the `hover` state to `false` for all dates.
 
 ```typescript
 const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { hoverMultiple, resetHover } } = useMonthlyCalendar()
+const { currentMonth, listeners: { hoverRange, resetHover } } = useMonthlyCalendar()
 
-hoverMultiple(currentMonth.days[10])
-hoverMultiple(currentMonth.days[20])
+hoverRange(currentMonth.days[10])
+hoverRange(currentMonth.days[20])
 
 /*
 All the days between the 11th and 21st are marked as `hovered`
