@@ -1,4 +1,4 @@
-import { endOfWeek, getWeek, startOfWeek } from "date-fns";
+import { endOfWeek, getWeek, setWeek, startOfWeek } from "date-fns";
 import { ICalendarDate } from "../models/CalendarDate";
 import { NormalizedCalendarOptions, Week } from "../types";
 import { chunk, generators } from "./utils";
@@ -23,7 +23,7 @@ export function weekGenerators<C extends ICalendarDate> (globalOptions: Normaliz
     };
   }
 
-  function wrapByWeek (days: Array<C>) {
+  function wrapByWeek (days: Array<C>): Array<Week> {
     const firstStartOfWeek = days.findIndex(day => day.date.getDay() === globalOptions.firstDayOfWeek);
     const weeks = [
       days.slice(0, firstStartOfWeek),
@@ -34,11 +34,13 @@ export function weekGenerators<C extends ICalendarDate> (globalOptions: Normaliz
     return weeks;
   }
 
-  function generateWeek (weekYearId: WeekId, options: Partial<any>): Week {
-    const weekRefDay = new Date(weekYearId.year, 0, weekYearId.weekNumber * 7);
-    const weekDays: C[] = generateConsecutiveDays(startOfWeek(weekRefDay), endOfWeek(weekRefDay));
+  function generateWeek (weekYearId: WeekId): Week {
+    const weekRefDay = setWeek(new Date(weekYearId.year, 0, 0), weekYearId.weekNumber, { weekStartsOn: globalOptions.firstDayOfWeek });
+    const weekDays: C[] = generateConsecutiveDays(
+      startOfWeek(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek }), 
+      endOfWeek(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek }),
+    );
     const newWeek: Week = weekFactory(weekDays);
-
     return newWeek;
   }
 

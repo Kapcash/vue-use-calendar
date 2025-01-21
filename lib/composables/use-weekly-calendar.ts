@@ -1,4 +1,4 @@
-import { computed, ref, ShallowReactive, watchEffect } from "vue";
+import { computed, ShallowReactive, watchEffect } from "vue";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
 import { disableExtendedDates } from "../utils/utils";
 import { ICalendarDate } from "../models/CalendarDate";
@@ -26,21 +26,22 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
     
     const daysByWeeks = wrapByWeek(weeklyDays) as ShallowReactive<Week<C>[]>;
     const days = computed(() => daysByWeeks.flatMap(week => week.days));
+    const weeks = computed(() => daysByWeeks.toSorted((a, b) => a.index - b.index));
 
     watchEffect(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
 
-    const currentWeekIndex = ref(0);
+    const currentWeekIndex = computed(() => {
+      return currentWrapper.value.index;
+    });
 
-    const { currentWrapper, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
+    const { currentWrapper, jumpTo, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
       daysByWeeks,
-      (newWeekIndex, currentWeek) => {
+      (newWeekIndex) => {
         const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
         const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
-        return generateWeek({ year, weekNumber }, {
-          firstDayOfWeek: globalOptions.firstDayOfWeek,
-        }) as Week<C>;
+        return generateWeek({ year, weekNumber }) as Week<C>;
       },
       infinite);
 
@@ -51,7 +52,8 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       currentWeek: currentWrapper,
       currentWeekIndex,
       days,
-      weeks: daysByWeeks,
+      weeks,
+      jumpTo: jumpTo,
       nextWeek: nextWrapper,
       prevWeek: prevWrapper,
       prevWeekEnabled: prevWrapperEnabled,

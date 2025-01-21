@@ -1,6 +1,12 @@
 import { isToday } from "date-fns";
 import { Ref, ref } from "vue";
 
+/* export enum SelectionType {
+  Single = 'single',
+  Multiple = 'multiple',
+  Range = 'range',
+} */
+
 export interface ICalendarDate {
   readonly date: Date;
   otherMonth: boolean;

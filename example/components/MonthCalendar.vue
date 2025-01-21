@@ -11,7 +11,9 @@
       </span>
     </div>
 
-    <button @click="goToCurrentMonth">Today</button>
+    <button @click="goToCurrentMonth">
+      Today
+    </button>
     <select v-model="currentMonthAndYear.year">
       <option
         v-for="year in years"
@@ -51,8 +53,8 @@
           v-for="day of currentMonth.days"
           :key="day.dayId"
           :day="day"
-          @click="listeners.selectRange(day)"
-          @mouseover="listeners.hoverMultiple(day)"
+          @click="listeners.selectRange(day, { strict: true, multiple: true })"
+          @mouseover="listeners.hoverMultiple(day, { strict: true })"
           @mouseleave="listeners.resetHover()"
         />
       </div>
@@ -72,15 +74,15 @@ const firstDayOfWeek = 1;
 const years = Array.from(new Array(100)).map((_, i) => 1950 + i);
 
 const { useMonthlyCalendar, useWeekdays } = useCalendar({
-  startOn: new Date(2023, 5, 12),
+  startOn: new Date(2027, 0, 12),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: fr,
-  preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
+  // preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
 });
 
-const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
-selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
+const { months, nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true, fullWeeks: true, fixedWeeks: true });
+// selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {

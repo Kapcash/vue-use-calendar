@@ -1,5 +1,5 @@
 import { NormalizedCalendarOptions } from './../types';
-import { isAfter, isBefore, isSameDay } from "date-fns";
+import { isAfter, isBefore, isEqual } from "date-fns";
 import { ICalendarDate } from "../models/CalendarDate";
 
 export function generators<C extends ICalendarDate> (globalOptions: NormalizedCalendarOptions<C>) {
@@ -16,7 +16,10 @@ export function generators<C extends ICalendarDate> (globalOptions: NormalizedCa
 
     while (isBefore(dates[dates.length - 1]?.date || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
-      date.disabled.value = globalOptions.disabled.some(disabled => isSameDay(date.date, disabled) );
+      date.disabled.value = Array.isArray(globalOptions.disabled) 
+        ? globalOptions.disabled.some(disabled => isEqual(date.date, disabled) )
+        : globalOptions.disabled(date.date);
+      date.isSelected.value = globalOptions.preSelection.some(pre => isEqual(date.date, pre));
       dates.push(date);
     }
 
@@ -29,15 +32,15 @@ export function generators<C extends ICalendarDate> (globalOptions: NormalizedCa
 }
 
 export function getBetweenDays (pureDates: ICalendarDate[], first: ICalendarDate, second: ICalendarDate) {
-  const firstSelectedDayIndex = pureDates.findIndex((day) => isSameDay(day.date, first.date));
-  const secondSelectedDayIndex = pureDates.findIndex((day) => isSameDay(day.date, second.date));
+  const firstSelectedDayIndex = pureDates.findIndex((day) => isEqual(day.date, first.date));
+  const secondSelectedDayIndex = pureDates.findIndex((day) => isEqual(day.date, second.date));
   const [lowestDate, greatestDate] = [firstSelectedDayIndex, secondSelectedDayIndex].sort((a, b) => a - b);
   return pureDates.slice(lowestDate + 1, greatestDate);
 }
 
 export function disableExtendedDates (dates: ICalendarDate[], from?: Date, to?: Date) {
-  const beforeFromDates = from ? dates.slice(0, dates.findIndex(day => isSameDay(day.date, from))) : [];
-  const afterToDates = to ? dates.slice(dates.findIndex(day => isSameDay(day.date, to))) : [];
+  const beforeFromDates = from ? dates.slice(0, dates.findIndex(day => isEqual(day.date, from))) : [];
+  const afterToDates = to ? dates.slice(dates.findIndex(day => isEqual(day.date, to))) : [];
   [...beforeFromDates, ...afterToDates].forEach(day => {
     day.disabled.value = true;
   });

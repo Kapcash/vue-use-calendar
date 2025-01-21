@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, Ref, ShallowReactive } from "vue";
+import { ComputedRef, ShallowReactive } from "vue";
 import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
@@ -12,6 +12,7 @@ export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
+  factory: CalendarFactory<C>;
 }
 
 interface CalendarComposable<C extends ICalendarDate> {
@@ -24,7 +25,7 @@ export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
   startOn?: DateInput;
   minDate?: DateInput;
   maxDate?: DateInput;
-  disabled?: Array<DateInput>;
+  disabled?: Array<DateInput> | ((date: Date) => boolean);
   firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
   preSelection?: Array<Date> | Date;
@@ -35,7 +36,7 @@ export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDa
   startOn: Date;
   minDate?: Date;
   maxDate?: Date;
-  disabled: Array<Date>;
+  disabled: Array<Date> | ((date: Date) => boolean);
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
   preSelection: Array<Date>;
@@ -49,12 +50,21 @@ export interface Computeds<C extends ICalendarDate> {
   betweenDates: ComputedRef<C[]>;
 }
 
+export interface SelectOptions {
+  strict?: boolean;
+  multiple?: boolean;
+}
+
+export type SelectRangeOptions = Pick<SelectOptions, 'strict' | 'multiple'>;
+export type HoverMultipleOptions = Pick<SelectOptions, 'strict'>;
+
 export interface Listeners<C extends ICalendarDate> {
   selectSingle: (clickedDate: C) => void;
-  selectRange: (clickedDate: C) => void;
+  selectRange: (clickedDate: C, options?: SelectRangeOptions) => void;
   selectMultiple: (clickedDate: C) => void;
-  hoverMultiple: (hoveredDate: C) => void;
+  hoverMultiple: (hoveredDate: C, options?: HoverMultipleOptions) => void;
   resetHover: () => void;
+  resetSelection: () => void;
 }
 
 export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
@@ -66,6 +76,7 @@ export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
 export interface MontlyOptions {
   infinite?: boolean;
   fullWeeks?: boolean;
+  fixedWeeks?: boolean;
 }
 
 export interface WrappedDays<C extends ICalendarDate = ICalendarDate> {
@@ -81,7 +92,9 @@ export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedD
 export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
   currentMonthAndYear: ShallowReactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<C>>;
-  months: ShallowReactive<Month<C>[]>;
+  currentMonthYearIndex: ComputedRef<number>;
+  months: ComputedRef<Month<C>[]>;
+  jumpTo: (i: number) => void;
   nextMonth: () => void;
   prevMonth: () => void;
   nextMonthEnabled: ComputedRef<boolean>;
@@ -97,9 +110,10 @@ export interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDa
 }
 
 export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-  weeks: Array<Week<C>>;
-  currentWeekIndex: Ref<number>;
+  weeks: ComputedRef<Array<Week<C>>>;
+  currentWeekIndex: ComputedRef<number>;
   currentWeek: ComputedRef<Week<C>>;
+  jumpTo: (i: number) => void;
   nextWeek: () => void;
   prevWeek: () => void;
   nextWeekEnabled: ComputedRef<boolean>;
