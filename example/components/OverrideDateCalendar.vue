@@ -29,7 +29,7 @@
       <div class="grid">
         <CalendarPriceCell
           v-for="day of currentMonth.days"
-          :key="day.dayId"
+          :key="day.id"
           :day="day"
           @click="listeners.selectRange(day)"
           @mouseover="listeners.hoverRange(day)"
@@ -42,9 +42,8 @@
 
 <script lang="ts" setup>
 import CalendarPriceCell from './CalendarPriceCell.vue';
-import { CustomDate } from './CustomDate';
+import { PriceMeta } from './CustomDate';
 import { useCalendar } from '../../lib/use-calendar';
-import { CalendarDate } from '../../lib/models/CalendarDate';
 import { addDays, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 
@@ -58,20 +57,16 @@ const pricesByDay = [
   { day: addDays(new Date(), 6).toLocaleDateString(), price: 50 },
 ];
 
-const { useMonthlyCalendar, useWeekdays } = useCalendar({
+const { useMonthlyCalendar, useWeekdays } = useCalendar<PriceMeta>({
   minDate: new Date(),
   maxDate: addMonths(new Date(), 2),
   disabled: disabledDates,
   firstDayOfWeek,
   locale: enGB,
   preSelection: [new Date(), addDays(new Date(), 6)],
-  factory: (calendarDate: CalendarDate) => {
-    const newDate = new CustomDate(calendarDate);
-    
-    const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
-    newDate.price = priceObj?.price || 0;
-
-    return newDate;
+  meta: (date: Date) => {
+    const priceObj = pricesByDay.find(price => price.day === date.toLocaleDateString());
+    return { price: priceObj?.price || 0 };
   },
 });
 

@@ -2,7 +2,7 @@
   <div class="date-picker">
     <h2>Date picker example</h2>
     <div v-if="selectedDates.length > 0">
-      Selection: {{ selectedDates?.[0]?.toLocaleDateString() }}
+      Selection: {{ selectedDates?.[0]?.date.toLocaleDateString() }}
     </div>
     <div>Current month: {{ currentMonth.month + 1 }} - {{ currentMonth.year }}</div>
 
@@ -23,7 +23,7 @@
         <div class="grid">
           <CalendarCell
             v-for="day of month.days"
-            :key="day.dayId"
+            :key="day.id"
             :day="day"
             @click="listeners.selectSingle(day)"
             @mouseleave="listeners.resetHover()"

@@ -1,13 +1,13 @@
 # Vue use-calendar
 
-A vue 3 composable to create any kind of calendar!
+A Vue 3 composable to create any kind of calendar!
 
 * Open source
 * SSR compliant
-* Fully typed with Typescript
-* Full customize your calendar style without thinking about the logic
-* Extendable
-* Uses [`date-fns`](https://date-fns.org/v2.28.0/docs) functions internally for lightweight and consistent Dates operations
+* Fully typed with TypeScript
+* Fully customize your calendar style without thinking about the logic
+* Extendable via the generic `meta` option
+* Uses [`date-fns`](https://date-fns.org/) internally for lightweight and consistent date operations
 
 This can be used to hold the dates logic for your calendar components.
 
@@ -23,75 +23,78 @@ npm install vue-use-calendar
 yarn add vue-use-calendar
 ```
 
+**Peer dependencies:** Vue 3 (`>=3.4`), `date-fns` (`^4`)
+
 ## Basic example
 
 ```typescript
-// Considering today is the 15th of March 2022
-const { useMontlyCalendar } = useCalendar()
+import { useCalendar } from 'vue-use-calendar';
+
+const { useMonthlyCalendar } = useCalendar({});
 const {
-    nextMonth,
-    prevMonth,
-    currentMonthAndYear,
-    currentMonth,
-    selectedDates,
-    listeners,
+  nextMonth,
+  prevMonth,
+  currentMonthAndYear,
+  currentMonth,
+  selectedDates,
+  listeners,
 } = useMonthlyCalendar({ fullWeeks: false, infinite: true });
 
 /*
-  currentMonthAndYear === { year: 2022, month: 2 }
-  currentMonth === { month: 2, year: 2022, days: [...], index: 24266 }
-  selectedDates === []
-*/ 
-
-// Go to next month
-nextMonth()
-
-/*
-  currentMonthAndYear === { year: 2022, month: 3 }
-  currentMonth === { month: 3, year: 2022, days: [...], index: 24267 }
-  selectedDates === []
+  currentMonthAndYear === { year: 2026, month: 4 }
+  currentMonth.value === { month: 4, year: 2026, days: [...], id: 24316 }
+  selectedDates.value === []
 */
 
-listeners.selectSingle(currentMonth.days[3])
+// Go to next month
+nextMonth();
 
 /*
-  selectedDates === [{ date: <4th March 2020>, isSelected: true, ... }]
+  currentMonthAndYear === { year: 2026, month: 5 }
+  currentMonth.value === { month: 5, year: 2026, days: [...], id: 24317 }
+*/
+
+listeners.selectSingle(currentMonth.value.days[3]);
+
+/*
+  selectedDates.value === [{ date: <4th June 2026>, id: '2026-06-04', state: { selected: true, ... }, ... }]
 */
 ```
 
 # The composables
 
-The entry point of the library is `use-calendar`.
+The entry point of the library is `useCalendar`.
 
-## use-calendar
+## useCalendar
 
 ```typescript
-import { isSameDay } from 'date-fns';
+import { useCalendar } from 'vue-use-calendar';
 import { es } from 'date-fns/locale';
 
+interface PriceMeta {
+  price: number;
+}
+
 const pricesByDay = [
-    { price: 55, date: '2022-05-12' },
-]
+  { price: 55, date: '2025-06-12' },
+];
 
-const { useMontlyCalendar } = useCalendar({
-    startOn: new Date(2025, 5, 1),
-    minDate: '2025-05-12',
-    maxDate: new Date(2025, 5, 18),
-    disabled: [new Date(2025, 5, 15)],
-    firstDayOfWeek: 1, // Monday
-    locale: es, // Spanish
-    preSelection: [new Date(2025, 5, 13)],
-    factory: (calendarDate: CalendarDate) => {
-        const newDate = new DatePrice(calendarDate);
-        
-        const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
-        newDate.price = priceObj?.price || 0;
+const { useMonthlyCalendar } = useCalendar<PriceMeta>({
+  startOn: new Date(2025, 5, 1),
+  minDate: '2025-05-12',
+  maxDate: new Date(2025, 5, 18),
+  disabled: [new Date(2025, 5, 15)],
+  firstDayOfWeek: 1, // Monday
+  locale: es, // Spanish
+  preSelection: [new Date(2025, 5, 13)],
+  meta: (date: Date) => {
+    const priceObj = pricesByDay.find(p => p.date === date.toISOString().slice(0, 10));
+    return { price: priceObj?.price || 0 };
+  },
+});
 
-        return newDate;
-    },
-})
-
-const { currentMonth } = useMontlyCalendar()
+const { currentMonth } = useMonthlyCalendar();
+// Access custom data: currentMonth.value.days[0].meta.price
 ```
 
 ## Parameters
@@ -99,485 +102,355 @@ const { currentMonth } = useMontlyCalendar()
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
 | startOn       | `string \| Date`                      | true | `undefined` | The date to initiate the calendar on |
-| minDate       | `string \| Date`                      | true | `undefined` | The minimum selectionable date. All dates before will be disabled |
-| maxDate       | `string \| Date`                      | true | `undefined` | The maximum selectionable date. All dates after will be disabled |
-| disabled      | `Array\<string \| Date>`              | true | `[]`        | A date or array of date to disable |
-| firstDayOfWeek | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6`    | true | `0`         | Tells on which day the week starts. 0 being Sunday. |
-| locale        | date-fns's `Locale`                   | true | `undefined` | The locale object to use for translating weekdays.<br>Import like `import { fr } from 'date-fns/locale';`. See [date-fns](https://date-fns.org/v2.28.0/docs/Locale) |
-| preSelection  | `Array\<Date> \| Date`                | true | `[]` | A date or array of date to be preselected on calendar generation |
-| factory       | `(date: CalendarDate) => \<extends CalendarDate\>` | true | `undefined` | A custom factory function to extend the default `CalendarDate` objects. See [exemple](TODO example link) |
+| minDate       | `string \| Date`                      | true | `undefined` | The minimum selectable date. All dates before will be disabled |
+| maxDate       | `string \| Date`                      | true | `undefined` | The maximum selectable date. All dates after will be disabled |
+| disabled      | `Array<string \| Date>`               | true | `[]`        | A date or array of dates to disable |
+| firstDayOfWeek | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6`  | true | `0`         | Tells on which day the week starts. 0 is Sunday. |
+| locale        | date-fns `Locale`                     | true | `undefined` | The locale object for translating weekdays/months.<br>Import like `import { fr } from 'date-fns/locale';`. See [date-fns](https://date-fns.org/docs/Locale) |
+| preSelection  | `Array<Date> \| Date`                 | true | `[]` | A date or array of dates to be preselected on calendar generation |
+| meta          | `(date: Date) => T`                   | true | `undefined` | A function to attach custom metadata to each day. The generic `T` flows through all composable return types. |
 
 ### Outputs
 
-The composable returns the following sub-composables
+The composable returns the following sub-composables:
 
 | name | description |
 |------|-------------|
-| [useMonthlyCalendar](#user-content-use-monthly-calendar)  | Generate a calendar where days are grouped by months |
-| [useWeeklyCalendar](#user-content-use-weekly-calendar)   | Generate a calendar where days are grouped by weeks |
-| [useWeekdays](#user-content-use-weekdays)         | Gets the list of weekdays, translated and formatted |
+| [useMonthlyCalendar](#use-monthly-calendar)  | Generate a calendar where days are grouped by months |
+| [useWeeklyCalendar](#use-weekly-calendar)    | Generate a calendar where days are grouped by weeks |
+| [useWeekdays](#use-weekdays)                 | Get the list of weekday names, translated and formatted |
+| [useMonthsList](#use-months-list)            | Get the list of month names, translated and formatted |
+| [useYearsList](#use-years-list)              | Get a list of year strings |
 
-## use-monthly-calendar
+## useMonthlyCalendar
 
 ```typescript
-const { useMontlyCalendar } = useCalendar()
+const { useMonthlyCalendar } = useCalendar({});
 
-const { currentMonth } = useMonthlyCalendar({ infinite: false, fullWeeks: false })
+const { currentMonth } = useMonthlyCalendar({ infinite: false, fullWeeks: false });
 ```
 
 ### Parameters
 
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
-| infinite  | `boolean` | true | `true` | Indicates if navigating throught the calendar should generate new months on the fly |
-| fullWeeks | `boolean` | true | `true` | Indicates if each month should display the "other month" days to complete each week |
+| infinite  | `boolean` | true | `true` | If true, navigating generates new months on the fly |
+| fullWeeks | `boolean` | true | `true` | If true, each month includes padding days from adjacent months to complete each week |
 
 ### Outputs
 
 | name | type | description |
 |------|------|-------------|
-| days | `ComputedRef<Array<C>>` | An array of all days currently generated in the calendar. Excludes copied days so the array is sorted by day without duplicates |
-| selectedDates | `Array<Date>` | Reactive array of current dates selection. |
-| listeners | `Listeners<C>` | Object of methods for changing dates states (see [##listeners](#user-content-listeners)) |
-| currentMonthAndYear | `ShallowReactive<{ month: number; year: number }>;` | Reactive object containing the current month and year displayed. Can be mutated. |
-| currentMonth | `ComputedRef<Month<C>>;` | The current month displayed. Contains data about this month and the array of days it includes. |
-| months | `ShallowReactive<Month<C>[]>;` | An array of all the months generated in the calendar. |
-| nextMonth | `() => void;` | Method to navigate to the next month |
-| prevMonth | `() => void;` | Method to navigate to the previous month |
-| nextMonthEnabled | `ComputedRef<boolean>;` | A computed boolean that indicates if it is allowed to go to the next month  |
-| prevMonthEnabled | `ComputedRef<boolean>;` | A computed boolean that indicates if it is allowed to go to the previous month |
+| days | `ComputedRef<CalendarDay<T>[]>` | All days across cached months, excluding `otherMonth` padding. Sorted chronologically without duplicates. |
+| selectedDates | `ComputedRef<CalendarDay<T>[]>` | Currently selected days. |
+| listeners | `Listeners<T>` | Methods for changing date states (see [Listeners](#listeners)). |
+| currentMonthAndYear | `Reactive<{ month: number; year: number }>` | Reactive object of the current month/year. Can be mutated directly to jump to any month. |
+| currentMonth | `ComputedRef<Month<T>>` | The current month. Contains `month`, `year`, `id`, and `days` array. |
+| months | `ComputedRef<Month<T>[]>` | All months currently in the cache, sorted chronologically. |
+| nextMonth | `() => void` | Navigate to the next month. |
+| prevMonth | `() => void` | Navigate to the previous month. |
+| nextMonthEnabled | `ComputedRef<boolean>` | Whether navigating forward is allowed (always true in infinite mode). |
+| prevMonthEnabled | `ComputedRef<boolean>` | Whether navigating backward is allowed (always true in infinite mode). |
 
-## use-weekly-calendar
+## useWeeklyCalendar
 
 ```typescript
-const { useWeeklyCalendar } = useCalendar()
+const { useWeeklyCalendar } = useCalendar({});
 
-const { currentWeek } = useWeeklyCalendar({ infinite: false })
+const { currentWeek } = useWeeklyCalendar({ infinite: false });
 ```
 
 ### Parameters
 
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
-| infinite  | `boolean` | true | `true` | Indicates if navigating throught the calendar should generate new weeks on the fly |
+| infinite  | `boolean` | true | `false` | If true, navigating generates new weeks on the fly |
 
 ### Outputs
 
 | name | type | description |
 |------|------|-------------|
-| days | `ComputedRef<Array<C>>` | An array of all days currently generated in the calendar. Excludes copied days so the array is sorted by day without duplicates |
-| selectedDates | `Array<Date>` | Reactive array of current dates selection. |
-| listeners | `Listeners<C>` | Object of methods for changing dates states (see [##listeners](#user-content-listeners)). |
-| weeks | `Array<Week<C>>;` | A reactive array of all generated weeks in the calendar. |
-| currentWeekIndex | `Ref<number>;` | The current week index displayed. |
-| currentWeek | `ComputedRef<Week<C>>;` | The current week wrapper. Contains data about this week and the array of days it includes. |
-| nextWeek | `() => void;` | Method to navigate to the next week |
-| prevWeek | `() => void;` | Method to navigate to the previous week |
-| nextWeekEnabled | `ComputedRef<boolean>;` | A computed boolean that indicates if it is allowed to go to the next week  |
-| prevWeekEnabled | `ComputedRef<boolean>;` | A computed boolean that indicates if it is allowed to go to the previous week |
+| days | `ComputedRef<CalendarDay<T>[]>` | All days across cached weeks, sorted chronologically. |
+| selectedDates | `ComputedRef<CalendarDay<T>[]>` | Currently selected days. |
+| listeners | `Listeners<T>` | Methods for changing date states (see [Listeners](#listeners)). |
+| currentWeek | `ComputedRef<Week<T>>` | The current week. Contains `weekNumber`, `month`, `year`, `id`, and `days` array. |
+| weeks | `ComputedRef<Week<T>[]>` | All weeks currently in the cache, sorted chronologically. |
+| nextWeek | `() => void` | Navigate to the next week. |
+| prevWeek | `() => void` | Navigate to the previous week. |
+| nextWeekEnabled | `ComputedRef<boolean>` | Whether navigating forward is allowed. |
+| prevWeekEnabled | `ComputedRef<boolean>` | Whether navigating backward is allowed. |
 
-## use-weekdays
+## useWeekdays
 
 ```typescript
-const { useWeekdays } = useCalendar()
+const { useWeekdays } = useCalendar({ locale: enGB, firstDayOfWeek: 1 });
 
-// [Mon, Tue, Wed, ..., Sun]
-const weekDays = useWeekdays('iii')
+// ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const weekDays = useWeekdays('iiiii');
 ```
 
 ### Parameters
 
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
-| weekdayFormat | `'i' \| 'io' \| 'ii' \| 'iii' \| 'iiii' \| 'iiiii' \| 'iiiiii'` | true | `'iiiii'` | The format to use while translating the weekdays. See [date-fns ISO day of week](https://date-fns.org/v2.28.0/docs/format) |
+| weekdayFormat | `'i' \| 'io' \| 'ii' \| 'iii' \| 'iiii' \| 'iiiii' \| 'iiiiii'` | true | `'iiiii'` | The format for weekday names. See [date-fns ISO day of week](https://date-fns.org/docs/format). |
 
-### Outputs
+### Output
 
-| name | reactive | description |
-|------|----------|-------------|
-|      | `false`  | The array of week days, translated and formatted. |
+Returns `string[]` — the array of weekday names, translated and formatted.
+
+## useMonthsList
+
+```typescript
+const { useMonthsList } = useCalendar({ locale: fr });
+
+// ['janvier', 'février', 'mars', ...]
+const months = useMonthsList({ format: 'MMMM' });
+```
+
+### Parameters
+
+| name | type | optional | default | description |
+|------|------|----------|---------|-------------|
+| format | `MonthInputFormat` | true | `'MMMM'` | The format for month names. |
+
+### Output
+
+Returns `string[]` — the array of month names, translated and formatted.
+
+## useYearsList
+
+```typescript
+const { useYearsList } = useCalendar({});
+
+// ['2020', '2021', ..., '2030']
+const years = useYearsList({ fromYear: 2020, toYear: 2030 });
+```
+
+### Parameters
+
+| name | type | optional | default | description |
+|------|------|----------|---------|-------------|
+| format | `YearInputFormat` | true | `'yyyy'` | The format for year strings. |
+| fromYear | `number` | true | 100 years ago | Start year. |
+| toYear | `number` | true | 100 years from now | End year. |
+| amount | `number` | true | — | If set, generate this many years starting from `fromYear`. |
+
+### Output
+
+Returns `string[]` — the array of year strings.
 
 ## Listeners
 
-The `listeners` object returned by the sub composables contains the following methods:
+The `listeners` object returned by the sub-composables contains the following methods:
 
 ### `selectSingle`
 
-Call this method to select a single date. It will unselect all currently selected dates.
+Select a single date. Unselects all previously selected dates.
 
 <details style="margin-bottom: 16px">
 <summary>Example:</summary>
 
 ```typescript
-const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { selectSingle } } = useMonthlyCalendar()
+const { useMonthlyCalendar } = useCalendar({});
+const { currentMonth, listeners: { selectSingle } } = useMonthlyCalendar();
 
-/*
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectSingle(currentMonth.value.days[10]);
+// days[10].state.selected === true, all others are false
 
-selectSingle(currentMonth.days[10])
-
-/*
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11] 12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
-
-selectSingle(currentMonth.days[20])
-
-/*
-Selecting another date resets all previously selected dates
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20 [21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectSingle(currentMonth.value.days[20]);
+// days[20].state.selected === true, days[10].state.selected === false
 ```
 </details>
 
 ### `selectRange`
 
-Use this method to select a range of two dates.
-
-Selecting a third date will remove the previous selected dates.
-
-Selecting an already selected date will unselect it. It won't unselect any other date, only the one in parameter. 
+Select a range of two dates. Selecting a third date clears the previous range and starts a new one. Selecting an already selected date toggles it off.
 
 <details style="margin-bottom: 16px">
 <summary>Example:</summary>
 
 ```typescript
-const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { selectRange } } = useMonthlyCalendar()
+const { useMonthlyCalendar } = useCalendar({});
+const { currentMonth, listeners: { selectRange } } = useMonthlyCalendar();
 
-/*
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectRange(currentMonth.value.days[10]);
+selectRange(currentMonth.value.days[20]);
+// days[10] and days[20]: state.selected === true
+// days between them: state.between === true
 
-selectRange(currentMonth.days[10])
-selectRange(currentMonth.days[20])
-
-/*
-The 11th and the 21st are marked as `selected`
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11] 12
- 13  14  15  16  17  18  19
- 20 [21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
-
-selectRange(currentMonth.days[27])
-
-/*
-A third date is selected. All previously selected date are reset and we select the new date only (the 28th here)
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27 [28] 29  30  31 
-*/
-
-selectRange(currentMonth.days[27])
-
-/*
-Selecting an already selected date reset its state
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectRange(currentMonth.value.days[27]);
+// Previous range cleared, only days[27].state.selected === true
 ```
 </details>
 
 ### `selectMultiple`
 
-Select multiple dates without limitation.
-
-Selecting an already selected date will unselect it.
+Select any number of dates. Selecting an already selected date toggles it off.
 
 <details style="margin-bottom: 16px">
 <summary>Example:</summary>
 
 ```typescript
-const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { selectMultiple } } = useMonthlyCalendar()
+const { useMonthlyCalendar } = useCalendar({});
+const { currentMonth, listeners: { selectMultiple } } = useMonthlyCalendar();
 
-/*
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectMultiple(currentMonth.value.days[10]);
+selectMultiple(currentMonth.value.days[20]);
+selectMultiple(currentMonth.value.days[27]);
+// All three days: state.selected === true
 
-selectMultiple(currentMonth.days[10])
-selectMultiple(currentMonth.days[20])
-
-/*
-The 11th and the 21st are marked as `selected`
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11] 12
- 13  14  15  16  17  18  19
- 20 [21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
-
-selectMultiple(currentMonth.days[27])
-
-/*
-A third date is selected. It just adds it to the selected date without wiping out the others
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11] 12
- 13  14  15  16  17  18  19
- 20 [21] 22  23  24  25  26
- 27 [28] 29  30  31 
-*/
-
-selectMultiple(currentMonth.days[27])
-
-/*
-Selecting an already selected date reset its state
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11] 12
- 13  14  15  16  17  18  19
- 20 [21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectMultiple(currentMonth.value.days[20]);
+// days[20].state.selected === false, others unchanged
 ```
 </details>
 
 ### `hoverRange`
 
-Set the hover status on all dates between the first selected date and the one passed in parameter.
-It can be used to style the dates in between two selected dates while you hover them.
+Set hover state on all dates between the first selected date and the hovered day. Typically bound to `@mouseover` for range-picker UIs.
 
 <details style="margin-bottom: 16px">
 <summary>Example:</summary>
 
 ```typescript
-const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { hoverRange } } = useMonthlyCalendar()
+const { useMonthlyCalendar } = useCalendar({});
+const { currentMonth, listeners: { selectRange, hoverRange } } = useMonthlyCalendar();
 
-/*
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+selectRange(currentMonth.value.days[10]);
+// One date selected — hovering now previews the range
 
-hoverRange(currentMonth.days[10])
-hoverRange(currentMonth.days[20])
-
-/*
-All the days between the 11th and 21st are marked as `hovered`
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11  12
- 13  14  15  16  17  18  19
- 20  21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
+hoverRange(currentMonth.value.days[20]);
+// All days between 10 and 20: state.hovered === true
 ```
 </details>
 
 ### `resetHover`
 
-Reset the `hover` state to `false` for all dates.
+Reset hover state on all dates. Typically bound to `@mouseleave`.
 
-<details style="margin-bottom: 16px">
-<summary>Example:</summary>
+# CalendarDay object
 
-```typescript
-const { useMontlyCalendar } = useCalendar()
-const { currentMonth, listeners: { hoverRange, resetHover } } = useMonthlyCalendar()
+Each date is represented by a `CalendarDay<T>` object — a plain object (not a class) with reactive state.
 
-hoverRange(currentMonth.days[10])
-hoverRange(currentMonth.days[20])
+| Property    | Type              | Description |
+|-------------|-------------------|-------------|
+| `date`      | `Date`            | The underlying Date object. Treat as read-only. |
+| `id`        | `string`          | Stable identity key, e.g. `"2026-05-10"`. |
+| `state`     | `CalendarDayState` | Reactive UI state object (see below). |
+| `otherMonth`| `boolean`         | True if the day is padding from an adjacent month (fullWeeks mode). |
+| `meta`      | `T`               | Custom metadata provided via the `meta` option. |
+| `isToday`   | `boolean`         | True if this date is today. |
+| `isWeekend` | `boolean`         | True if Saturday or Sunday. |
+| `dayOfWeek` | `number`          | 0 = Sunday … 6 = Saturday. |
 
-/*
-All the days between the 11th and 21st are marked as `hovered`
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10 [11  12
- 13  14  15  16  17  18  19
- 20  21] 22  23  24  25  26
- 27  28  29  30  31 
-*/
+### CalendarDayState
 
-resetHover()
+The `state` property is a `shallowReactive` object shared across all instances of the same day (including otherMonth padding copies):
 
-/*
-All days marked as `hovered` are reset to normal state
-         March 2022     
- Su  Mo  Tu  We  Th  Fr  Sa
-          1   2   3   4   5
-  6   7   8   9  10  11  12
- 13  14  15  16  17  18  19
- 20  21  22  23  24  25  26
- 27  28  29  30  31 
-*/
+| Property   | Type      | Description |
+|------------|-----------|-------------|
+| `selected` | `boolean` | Whether the day is currently selected. |
+| `hovered`  | `boolean` | Whether the day is currently hovered. |
+| `between`  | `boolean` | Whether the day is between two selected dates. |
+| `disabled` | `boolean` | Whether the day is disabled. |
+
+**Usage in templates:**
+
+```vue
+<template>
+  <button
+    :class="{
+      active: day.state.selected,
+      hover: day.state.hovered,
+      between: day.state.between,
+      light: day.otherMonth,
+      today: day.isToday,
+    }"
+    :disabled="day.state.disabled"
+    @click="listeners.selectRange(day)"
+    @mouseover="listeners.hoverRange(day)"
+    @mouseleave="listeners.resetHover()"
+  >
+    {{ day.date.getDate() }}
+  </button>
+</template>
 ```
-</details>
 
-# How does it work?
+## Extending days with `meta`
 
-Each date is represented by a custom Date implementation called `CalendarDate`.
-It inherits the vanilla `Date` class, so it's fully compatible with any library and code using it.
-
-## CalendarDate object
-
-|    Property     |      Type       |   Description    |
-|-----------------|-----------------|------------------|
-| isToday         | `boolean`       | True if is the same day as today. Readonly.  |
-| isWeekend       | `boolean`       | True if is saturday or sunday. Readonly.     |
-| otherMonth      | `boolean`       | True if the date is included in the current month view. |
-| disabled        | `Ref<boolean>`  | Reactive boolean if the date is disabled. |
-| isSelected      | `Ref<boolean>`  | Reactive boolean if the date is selected. |
-| isBetween       | `Ref<boolean>`  | Reactive boolean if the date is between two selected dates. |
-| isHovered       | `Ref<boolean>`  | Reactive boolean if the date is currently hovered. |
-| monthYearIndex  | `number`        | The date's month index. See [What's the monthYear index?](#user-content-whats-the-monthyear-index) |
-| dayId           | `${year}-${month}-${day}` | A string representing a uniq id for this day. In the form `${year}-${month}-${day}`. Used internally. |
-| _copied         | `boolean`       | True if the day is a copy from another day. See [## Linked dates](#user-content-linked-dates). Used internally. |
-
-### Extending the `CalendarDate` objects
-
-You can provide an optional custom function in the `useCalendar` composable to add extra properties to your date objects.
+Instead of subclassing a date object, use the generic `meta` option to attach custom data:
 
 ```typescript
-// Imagine you have this kind of array somewhere in your app / components
-const pricesByDay = [
-    { price: 55, date: '2022-05-12' },
-]
-
-// You need to create a custom class, inheriting the library's inner Date class.
-export class DatePrice extends CalendarDate {
-  price: number = 0;
-
-  constructor(...args: DateConstructorParameters) {
-    super(...args);
-    this.price = 0;
-  }
+interface PriceMeta {
+  price: number;
 }
 
-// If you want the calendar to use this object, you can provide a function to make the mapping yourself.
+const { useMonthlyCalendar } = useCalendar<PriceMeta>({
+  meta: (date: Date) => ({
+    price: getPriceForDate(date),
+  }),
+});
 
-const { useMontlyCalendar } = useCalendar({
-    factory: (calendarDate) => {
-        // 1. Create an instance of your custom Date class, copied from the given date.
-        const newDate = new DatePrice(calendarDate);
-
-        // 2. Update its attributes howerever you like.
-        // Here we find then set the price of the date.
-        const priceObj = pricesByDay.find(price => price.day === calendarDate.toLocaleDateString());
-        newDate.price = priceObj?.price || 0;
-
-        // 3. Return the new date instance. The composable will be using this one now.
-        return newDate;
-    }
-})
+const { currentMonth } = useMonthlyCalendar();
+// currentMonth.value.days[0].meta.price
 ```
 
-It's a function that takes as a parameter a `CalendarDate` object generated by the composable.
-Anytime the composable generates a new date, it will trigger this function.
+The `meta` callback runs once per day at creation time. It is **not** reactive — if the underlying data changes, you should use a separate `computed` or `watch` in your component.
 
-You must return an object containing the same properties as the original, eventually with extra ones.
+## Month & Week containers
 
-> **Careful with this function!** If you don't return the complete original object, it may break the composables.
-> Be sure that you don't touch the existing properties of the CalendarDate object!
+### Month\<T\>
 
-## What's the monthYear index?
+| Property | Type | Description |
+|----------|------|-------------|
+| `id`     | `MonthId` (number) | Unique month index: `year * 12 + month`. |
+| `month`  | `number` | 0-indexed month (0 = January). |
+| `year`   | `number` | Full year. |
+| `days`   | `CalendarDay<T>[]` | All days in this month (including otherMonth padding if fullWeeks). |
 
-What we call the "monthYear" index is **not a real concept**.
-We use this index to identify every month with a number having the following properties:
-* All monthYearIndex is uniq for a given month in a year.
-* Two consecutives months should have a consecutive number (also true between "december year 1" and "january year 2")
+### Week\<T\>
 
-The formula to compute it is as simple as : `<month index> + <year> * 12`
+| Property     | Type | Description |
+|--------------|------|-------------|
+| `id`         | `WeekId` (number) | Unique week index: `year * 100 + weekNumber`. |
+| `weekNumber` | `number` | ISO week number. |
+| `month`      | `number` | Month of the first day in the week. |
+| `year`       | `number` | Year of the first day in the week. |
+| `days`       | `CalendarDay<T>[]` | The 7 days in this week. |
 
-Example:
-```
-2020/08/18 => (08 - 1) + 2020 * 12 => 24247
-2020/12/25 => (12 - 1) + 2020 * 12 => 24251
-2021/01/21 => (01 - 1) + 2021 * 12 => 24252
-```
+## How navigation works
 
-This is internally used to easily navigate thought months (and years) with an classical index as an iterator.
+Months and weeks are generated lazily and stored in a reactive cache. When you navigate (`nextMonth`, `prevMonth`, `jumpTo`), only the target period is generated — not every period in between.
 
-## Linked dates
+The cache has a configurable maximum size (default 13). When exceeded, the period farthest from the current view is evicted. In finite mode (with `minDate`/`maxDate`), all periods are pre-generated and the cache is sized to hold them all.
 
-The composable use a mechanism to link two identical dates so that when the state of one changes, the other is updated too.
+You can jump directly to any month by mutating `currentMonthAndYear`:
 
-For instance, when using `fullWeeks` prop on the `use-monthly-calendar` composable, you will have duplicates dates across your months.
-Month 1 will show some dates from Month 2, because they are part of its last week.
-On Month 2, these dates are the first dates of the month. But it also shows the last dates from Month 1.
-
-```
-      March 2022            April 2022       
- Su Mo Tu We Th Fr Sa  Su Mo Tu We Th  Fr Sa  
-        1  2  3  4  5  [27 28 29 30 31] 1  2  
-  6  7  8  9 10 11 12   3  4  5  6  7   8  9  
- 13 14 15 16 17 18 19  10 11 12 13 14  15 16  
- 20 21 22 23 24 25 26  17 18 19 20 21  22 23  
- 27 28 29 30 31 [1 2]  24 25 26 27 28  29 30 
+```typescript
+currentMonthAndYear.month = 2;  // March
+currentMonthAndYear.year = 2027;
 ```
 
-In the calendars above, the dates between squared brackets are copies from the dates in the original month.
-There are **linked.**
+## Shared state across months
 
-So when the date 30 in "March 2022" is selected, so is the [30th] in "April 2022".
+When using `fullWeeks: true`, padding days from adjacent months share the **same reactive state** as their counterparts in the original month. Selecting May 31 in June's padding will also select May 31 in May's view — no manual syncing needed.
 
-> Technical note: A date linked to another is marked by the internal attribute `_copied`
+## Utility exports
 
-## How does the "navigation" between dates wrappers (months, weeks) work?
+The library exports helper functions for working with period IDs:
 
-When using a wrapped view of the calendar (by months or weeks), the composable returns specific methods to switch between views (go to prev/next months or weeks).
-To avoid generating too much data, it actually only renders the dates of the current view.
-
-So if you're seeing the month of May 2022, the current dates array will only have this month's dates.
-If you switch to another month, let's say September 2026, it will generates the dates for that month and remove the previous ones.
-
-This is done to avoid having all the dates between the initial date and the ones we navigate to.
-Imagine you're on May 2022 and jump to May 2026, we don't need to generate all the dates in between as it would consume too much memory.
+```typescript
+import {
+  monthIdFromDate,    // Date → MonthId
+  monthIdFromYearMonth, // (year, month) → MonthId
+  yearFromMonthId,    // MonthId → year
+  monthFromMonthId,   // MonthId → month (0-indexed)
+  dayIdFromDate,      // Date → "yyyy-MM-dd"
+  weekIdFromYearWeek, // (year, week) → WeekId
+  yearFromWeekId,     // WeekId → year
+  weekFromWeekId,     // WeekId → week number
+} from 'vue-use-calendar';
+```
 
 # Contributing
 
@@ -591,28 +464,29 @@ Then install the dependencies:
 yarn install
 ```
 
-Start the example on localhost:3000:
+Run tests:
 
 ```
-yarn example
+yarn test
+```
+
+Start the example on localhost:
+
+```
+yarn dev:example
+```
+
+Build the library:
+
+```
+yarn build
 ```
 
 ## Submit changes
 
 If you're willing to participate in the development of this library, you are warmly welcome!
 
-Here are the steps to follow:
-1. Fork the repository on github
-2. Clone your fork (or update your remote target branch to your fork)
-3. Open a branch, name it according the changes you are planning on doing.
-4. Submit a PullRequest.
-
-I'll review it as soon as possible! 👐
-
-# Todos
-
-* Try a LinkedList implementation to simplify the code (without class instance for SSR)
-* avoid updating currentMonthAndYear if `infinite === false`
-* use date-fns locale's weekStartOn by default
-* weekly calendar selection
-* move `otherMonth` and `monthYearIndex` attribute of the default CalendarDate object. Should be a custom one for month-calendar only.
+1. Fork the repository on GitHub
+2. Clone your fork
+3. Create a branch named after the changes you're making
+4. Submit a Pull Request

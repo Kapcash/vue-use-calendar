@@ -1,63 +1,75 @@
-import { computed, ref, ShallowReactive, watchEffect } from "vue";
-import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
-import { disableOutOfRangeDates } from "../utils/utils";
-import { CalendarDate } from "../models/CalendarDate";
-import { useDaysComputeds, useSelectors } from "./reactiveDates";
-import { endOfWeek, startOfWeek } from "date-fns";
-import { useNavigation } from "./use-navigation";
-import { weekGenerators } from "../utils/utils.week";
+import { computed } from "vue";
+import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId } from "../types";
+import { createNavigation } from "../core/navigation";
+import { createSelectionState } from "../core/selection";
+import { weekIdFromDate, generateWeek, makeNextWeekId, makePrevWeekId } from "../utils/week";
 
-const DEFAULT_MONTLY_OPTS: WeeklyOptions = {
+const DEFAULT_WEEKLY_OPTS: WeeklyOptions = {
   infinite: false,
 };
 
-export function weeklyCalendar<C extends CalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
-  const { generateConsecutiveDays, wrapByWeek, generateWeek } = weekGenerators(globalOptions);
+export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
+  return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<T> {
+    const { infinite } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
-  return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<C> {
-    const { infinite } = { ...DEFAULT_MONTLY_OPTS, ...opts };
+    const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
 
-    const weeklyDays = generateConsecutiveDays(
-      startOfWeek(globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
-      endOfWeek(globalOptions.maxDate || globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
+    let minWeekId: WeekId | undefined;
+    let maxWeekId: WeekId | undefined;
+    if (!infinite) {
+      minWeekId = startWeekId;
+      maxWeekId = globalOptions.maxDate
+        ? weekIdFromDate(globalOptions.maxDate, globalOptions.firstDayOfWeek)
+        : startWeekId;
+    }
+
+    // Create selection state — getOrCreateState is needed by generateWeek
+    const { selectedIds, listeners, getOrCreateState } = createSelectionState<T>(
+      globalOptions.preSelection,
     );
-    
-    disableOutOfRangeDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
-    
-    const daysByWeeks = wrapByWeek(weeklyDays) as ShallowReactive<Week<C>[]>;
-    const days = computed(() => daysByWeeks.flatMap(week => week.days));
 
-    watchEffect(() => {
-      disableOutOfRangeDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
+    const nextWeekId = makeNextWeekId(globalOptions.firstDayOfWeek);
+    const prevWeekId = makePrevWeekId(globalOptions.firstDayOfWeek);
+
+    const nav = createNavigation<WeekId, Week<T>>(
+      startWeekId,
+      (id) => generateWeek(id, globalOptions, getOrCreateState),
+      !!infinite,
+      minWeekId,
+      maxWeekId,
+      nextWeekId,
+      prevWeekId,
+    );
+
+    // Pre-generate all weeks in finite mode
+    if (!infinite && globalOptions.maxDate) {
+      const endId = weekIdFromDate(globalOptions.maxDate, globalOptions.firstDayOfWeek);
+      let id = startWeekId;
+      while (id <= endId) {
+        nav.ensureCached(id);
+        id = nextWeekId(id);
+      }
+    }
+
+    const weeks = computed(() => nav.allPeriods.value);
+
+    const days = computed(() => {
+      return weeks.value.flatMap(w => w.days);
     });
 
-    const currentWeekIndex = ref(0);
+    const selectedDates = computed(() => days.value.filter(d => selectedIds.has(d.id)));
 
-    const { currentWrapper, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
-      daysByWeeks,
-      (newWeekIndex, currentWeek) => {
-        const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
-        const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
-        return generateWeek({ year, weekNumber }, {
-          firstDayOfWeek: globalOptions.firstDayOfWeek,
-        }) as Week<C>;
-      },
-      infinite);
-
-    const computeds = useDaysComputeds(days);
-    const { selection, ...selectors } = useSelectors(days, computeds.betweenDates, computeds.hoveredDates);
 
     return {
-      currentWeek: currentWrapper,
-      currentWeekIndex,
+      currentWeek: nav.currentPeriod,
+      weeks,
       days,
-      weeks: daysByWeeks,
-      nextWeek: nextWrapper,
-      prevWeek: prevWrapper,
-      prevWeekEnabled: prevWrapperEnabled,
-      nextWeekEnabled: nextWrapperEnabled,
-      selectedDates: selection,
-      listeners: selectors,
+      selectedDates,
+      nextWeek: () => { nav.next(); },
+      prevWeek: () => { nav.prev(); },
+      nextWeekEnabled: nav.nextEnabled,
+      prevWeekEnabled: nav.prevEnabled,
+      listeners,
     };
   };
 }

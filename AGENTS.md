@@ -4,8 +4,8 @@
 
 **vue-use-calendar** is a Vue 3 composable library for managing calendar and date-picker state. It is designed for renderless/headless calendar components — it handles all date logic and selection state, leaving rendering entirely to the consumer.
 
-- **Runtime dependency:** `date-fns` (date manipulation and formatting)
-- **Peer dependency:** Vue 3 (`>=3`)
+- **Runtime dependency:** `date-fns` v4 (date manipulation and formatting)
+- **Peer dependency:** Vue 3 (`>=3.4`)
 - **Language:** TypeScript (strict mode)
 - **Build tool:** tsup (outputs ESM + CJS + `.d.ts`)
 - **Test framework:** Vitest
@@ -15,23 +15,23 @@
 
 ```
 lib/                        # Library source (published to npm)
-  index.ts                  # Public entry point — re-exports everything
-  use-calendar.ts           # Main composable: useCalendar()
+  index.ts                  # Public entry point — re-exports useCalendar, types, ID utils
+  use-calendar.ts           # Main composable: useCalendar() + normalizeGlobalParameters()
   types.ts                  # All shared TypeScript types and interfaces
-  models/
-    CalendarDate.ts         # CalendarDate class (extends Date) + factory
+  core/
+    calendar-day.ts         # createCalendarDay<T>() factory + generateConsecutiveDays<T>()
+    selection.ts            # createSelectionState<T>() — centralized selection/hover/between
+    navigation.ts           # createNavigation<TId, TPeriod>() — lazy cache + LRU eviction
   composables/
-    reactiveDates.ts        # Selection/hover/between computed state
-    use-monthly-calendar.ts # Monthly calendar composable
-    use-weekly-calendar.ts  # Weekly calendar composable
-    use-navigation.ts       # Shared navigation logic (next/prev/jump)
+    use-monthly-calendar.ts # Monthly calendar composable (curried)
+    use-weekly-calendar.ts  # Weekly calendar composable (curried)
     use-weekdays.ts         # Weekday names composable
     use-months-list.ts      # Month names list composable
     use-years-list.ts       # Year list composable
   utils/
-    utils.ts                # General utilities (chunk, date ranges, etc.)
-    utils.month.ts          # Month-specific generation & wrapping
-    utils.week.ts           # Week-specific generation & wrapping
+    date.ts                 # Pure utilities (ID conversions, checks, chunk)
+    month.ts                # generateMonth<T>() + padFullWeeks
+    week.ts                 # generateWeek<T>() + weekId arithmetic
 
 tests/                      # Vitest test files
   helpers.ts                # Test utilities (areConsecutiveDays)
@@ -60,51 +60,96 @@ example/                    # Vue 3 + Vite demo app (deployed to GitHub Pages)
 
 ### Entry Point
 
-`useCalendar(options)` is the single entry point. It accepts global options (start date, min/max, disabled dates, locale, factory, first day of week, pre-selection) and returns sub-composables:
+`useCalendar<T>(options)` is the single entry point. It accepts global options (start date, min/max, disabled dates, locale, meta factory, first day of week, pre-selection) and returns sub-composables:
 
-- `useMonthlyCalendar(opts)` — monthly view with navigation, selection, days grouped by month
-- `useWeeklyCalendar(opts)` — weekly view with navigation, selection, days grouped by week
-- `useWeekdays(format)` — translated weekday names
-- `useMonthsList(format)` — translated month names
-- `useYearsList(opts)` — range of formatted year strings
+- `useMonthlyCalendar(opts?)` — monthly view with navigation, selection, days grouped by month
+- `useWeeklyCalendar(opts?)` — weekly view with navigation, selection, days grouped by week
+- `useWeekdays(format?)` — translated weekday names
+- `useMonthsList(opts?)` — translated month names
+- `useYearsList(opts?)` — range of formatted year strings
 
-### CalendarDate Model
+Options are normalized in `normalizeGlobalParameters<T>()` before being passed to sub-composables.
 
-`CalendarDate` extends native `Date` with reactive Vue properties: `isSelected`, `isBetween`, `isHovered`, `disabled`, `otherMonth`. It supports a `copy()` method for "full weeks" duplicates. A factory pattern (`generateCalendarFactory`) allows consumers to extend `CalendarDate` with custom properties (e.g., prices, availability).
+### CalendarDay Model
 
-### Reactivity Model
+`CalendarDay<T>` is a plain TypeScript interface (not a class). Each day is a plain object created by `createCalendarDay<T>()` in `lib/core/calendar-day.ts`:
 
-- Navigation state uses `shallowReactive` arrays and `ref` for indices.
-- Date boolean flags (`isSelected`, `isHovered`, etc.) are individual `Ref<boolean>` on each `CalendarDate` instance.
-- Computed properties in `reactiveDates.ts` derive filtered lists (pure dates, selected, hovered, between).
-- Selection listeners (`selectSingle`, `selectRange`, `selectMultiple`, `hoverRange`, `resetHover`) mutate the reactive refs on the CalendarDate instances directly.
+```ts
+interface CalendarDay<T> {
+  date: Date;              // The underlying Date
+  id: string;              // "YYYY-MM-DD" — stable, sortable
+  state: CalendarDayState; // { selected, hovered, between, disabled } — shallowReactive
+  otherMonth: boolean;     // True for full-week padding days from adjacent months
+  meta: T;                 // User-defined metadata via meta option
+  isToday: boolean;
+  isWeekend: boolean;
+  dayOfWeek: number;       // 0=Sun … 6=Sat
+}
+```
+
+The generic `T` flows from `useCalendar<T>()` through all composable return types and `CalendarDay<T>` instances. Consumers attach custom data via the `meta: (date: Date) => T` option instead of subclassing.
+
+### Shared State Registry (StateProvider)
+
+`CalendarDayState` is a `shallowReactive` object. When `fullWeeks: true`, the same calendar day can appear in multiple months (as otherMonth padding). All copies of a day share the **same** state reference via a `StateProvider`:
+
+- `createSelectionState()` owns a `stateMap: Map<string, CalendarDayState>` — the single source of truth.
+- It exposes `getOrCreateState: StateProvider` which is passed to day/month/week generators.
+- When `createCalendarDay()` receives a `stateProvider`, it fetches or creates the shared state by day ID. Selecting a day in one month instantly reflects in all months that display it.
+
+### Selection & Range Logic
+
+`createSelectionState<T>()` in `lib/core/selection.ts` manages selection centrally:
+
+- **Data structures:** `selectedIds` and `hoveredIds` are `reactive(Set<string>)`. The `stateMap` is a plain `Map<string, CalendarDayState>`.
+- **Range computation:** `betweenIds` and `hoverRange` use **lexicographic comparison** of `"YYYY-MM-DD"` IDs over the `stateMap` keys — not array indices. This avoids issues with duplicate entries from otherMonth padding across cached months.
+- **State sync:** `syncAllStates()` iterates the entire `stateMap` and reconciles `selected`, `hovered`, `between` flags from the reactive sets. Called after every listener mutation.
+- **Listeners:** `selectSingle`, `selectRange`, `selectMultiple`, `hoverRange`, `resetHover` — exposed via the `Listeners<T>` interface.
 
 ### Navigation
 
-`use-navigation.ts` provides shared navigation logic for both monthly and weekly views. It supports finite or infinite mode — infinite mode generates new months/weeks on-the-fly as the user navigates.
+`createNavigation<TId, TPeriod>()` in `lib/core/navigation.ts` is a generic lazy-cache navigator used by both monthly and weekly composables:
+
+- **Cache:** `shallowReactive(new Map<TId, TPeriod>())` — periods are generated on demand by a `generatePeriod(id)` factory and cached.
+- **LRU eviction:** When cache exceeds `maxCacheSize` (default 13), the entry farthest from `currentPeriodId` is evicted.
+- **Reactivity:** `shallowReactive(Map)` triggers Vue's dependency tracking on `.set()`, `.delete()`, and `.entries()` natively.
+- **Supports:** `next()`, `prev()`, `jumpTo(id)`, `ensureCached(id)`. Finite mode restricts navigation to `[minId, maxId]`.
+- **ID schemes:** `MonthId = year * 12 + month` (12 months per year, no collision). `WeekId = year * 100 + isoWeek` — 100 (`WEEK_ID_RADIX`) is the numeric base for packing year and week into one integer; ISO weeks never exceed 53 so there is no collision risk, and the result is human-readable and naturally sortable (e.g. week 3 of 2026 → `202603`). Custom `nextId`/`prevId` functions handle year boundaries for weeks.
+
+### Monthly Composable
+
+`monthlyCalendar<T>()` is a curried higher-order function. Key implementation details:
+
+- **Lazy wiring pattern:** Selection state is created before navigation (to obtain `getOrCreateState`), but `pureDays` depends on navigation output. A `pureDaysHolder` indirection resolves this chicken-and-egg dependency.
+- **Pre-generation:** When `maxDate` is set and `infinite: false`, all months in range are eagerly cached.
+- **`days`:** `computed` flat list of all days across all cached months (includes otherMonth padding).
+- **`pureDays`:** `days` filtered by `!otherMonth`.
+- **`currentMonthAndYear`:** `reactive({ month, year })` with bidirectional `watch` to/from `nav.currentPeriodId`.
+
+### Weekly Composable
+
+Same curried pattern as monthly. Uses custom `nextWeekId`/`prevWeekId` for year-boundary arithmetic. No otherMonth padding concept.
 
 ## Coding Conventions
 
 ### TypeScript
 
-- Strict mode enabled (`strict: true` in tsconfig).
-- Use generics with `C extends CalendarDate` throughout the library to support the factory pattern.
-- Types and interfaces live in `lib/types.ts`; model classes live in `lib/models/`.
+- Strict mode enabled (`strict: true` in tsconfig, `target: ESNext`, `moduleResolution: bundler`).
+- Generic `<T>` (metadata type) flows through all composables and `CalendarDay<T>`. No class inheritance.
+- Types and interfaces live in `lib/types.ts`; core logic in `lib/core/`.
 - Semicolons are required (`@typescript-eslint/semi: error`).
 - Trailing commas required on multiline (`comma-dangle: always-multiline`).
-- Class members separated by blank lines (except single-line members).
 
 ### Composable Pattern
 
 - All composables follow the `useX` naming convention.
 - Sub-composable constructors (e.g., `monthlyCalendar`, `weeklyCalendar`) are higher-order functions: they accept normalized global options and return the actual `useX` composable function.
-- Options are normalized in `normalizeGlobalParameters()` before being passed to sub-composables.
 
 ### Date Handling
 
-- All date manipulation uses `date-fns` — never use raw Date methods for calculations.
-- Date inputs (`DateInput`) accept both `Date` objects and ISO strings; normalization happens in `normalizeGlobalParameters`.
-- `MonthYear` is a numeric index (`month + year * 12`) used to uniquely identify and compare months.
+- All date manipulation uses `date-fns` v4 — never use raw Date methods for calculations.
+- Date inputs accept both `Date` objects and ISO strings; normalization happens in `normalizeGlobalParameters`.
+- `MonthId` is `year * 12 + month`. `WeekId` is `year * 100 + isoWeek` (see `WEEK_ID_RADIX` in `lib/utils/week.ts`). Day IDs are `"YYYY-MM-DD"` strings.
 
 ## Testing Conventions
 
@@ -113,10 +158,11 @@ example/                    # Vue 3 + Vite demo app (deployed to GitHub Pages)
 - Test file naming: `<composable-name>.spec.ts` in the `tests/` directory.
 - Helper utilities for tests live in `tests/helpers.ts`.
 - Tests validate both structure (correct return types) and behavior (navigation, selection, boundary conditions).
+- No weekly calendar tests exist yet.
 
 ## Common Pitfalls
 
-- `CalendarDate` extends `Date`, which has quirks — be careful with `instanceof` checks and serialization.
-- The `_copied` flag on `CalendarDate` distinguishes original dates from "full week" copies that belong to adjacent months. The `pureDates` computed filters these out.
-- `isWeekend` getter has a bug: `weekDay > 6` can never be true for `getDay()` (returns 0–6). It only checks Sunday (`=== 0`), not Saturday (`=== 6`).
-- When adding new composables, remember to wire them through `useCalendar()` and export from `lib/index.ts`.
+- **Shared state across months:** When using `fullWeeks: true`, otherMonth days share their `CalendarDayState` with the original month via the `StateProvider`. Always use the shared `getOrCreateState` when creating days — never create standalone state for days that may appear in multiple periods.
+- **Range computation uses string comparison, not array indices.** Day IDs (`"YYYY-MM-DD"`) sort lexicographically = chronologically. The `betweenIds` and `hoverRange` logic iterates `stateMap` keys and compares IDs directly, avoiding issues with duplicate entries from otherMonth padding.
+- **Lazy wiring pattern.** In `use-monthly-calendar.ts`, `pureDaysHolder` resolves a circular dependency: selection state needs `pureDays`, but `pureDays` depends on navigation which needs `getOrCreateState` from selection.
+- When adding new composables, wire them through `useCalendar()` and export from `lib/index.ts`.

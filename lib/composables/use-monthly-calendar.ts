@@ -1,83 +1,119 @@
-import { computed, ComputedRef, reactive, watch, watchEffect } from "vue";
-import { startOfMonth, endOfMonth } from "date-fns";
-import { Month, MonthlyCalendarComposable, MontlyOptions, NormalizedCalendarOptions } from '../types';
-import { dateToMonthYear, disableOutOfRangeDates } from "../utils/utils";
-import { CalendarDate } from "../models/CalendarDate";
-import { useDaysComputeds, useSelectors } from "./reactiveDates";
-import { useNavigation } from "./use-navigation";
-import { monthGenerators } from "../utils/utils.month";
+import { computed, reactive, watch } from "vue";
+import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOptions, MonthId } from "../types";
+import { monthIdFromDate, monthIdFromYearMonth, monthFromMonthId, yearFromMonthId, generateMonth } from "../utils/month";
+import { createNavigation } from "../core/navigation";
+import { createSelectionState } from "../core/selection";
 
-export function monthlyCalendar<C extends CalendarDate>(globalOptions: NormalizedCalendarOptions<C>) {
-  const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
-
-  return function useMonthlyCalendar(opts: MontlyOptions = {}): MonthlyCalendarComposable<C> {
+export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
+  return function useMonthlyCalendar(opts: MonthlyOptions = {}): MonthlyCalendarComposable<T> {
     const { infinite = true, fullWeeks = true } = opts;
 
-    // Generate all Dates from startOn to maxDate
-    const monthlyDays: C[] = generateConsecutiveDays(
-      startOfMonth(globalOptions.startOn),
-      endOfMonth(globalOptions.maxDate || globalOptions.startOn),
-    );
+    const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
-    // Wrap the Dates by month
-    const daysByMonths = wrapByMonth(monthlyDays, fullWeeks);
-
-    const days = computed(() => daysByMonths.flatMap(month => month.days));
-    const computeds = useDaysComputeds(days);
-
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.betweenDates, computeds.hoveredDates, globalOptions.preSelection);
-
-    function createNewMonthWrapper (newIndex: number, _currentMonth: ComputedRef<Month<C>>) {
-      const newMonth = generateMonth(newIndex, {
-        otherMonthsDays: !!fullWeeks,
-        beforeMonthDays: daysByMonths.find(month => month.index === newIndex - 1)?.days || [], // Could be avoided with a linked list
-        afterMonthDays: daysByMonths.find(month => month.index === newIndex + 1)?.days || [], // Could be avoided with a linked list
-      });
-      // FIXME: Triggers "selection" reactivity manually
-      // selection.value.splice(0, selection.length, ...selection.reverse());
-      return newMonth;
+    // Determine finite bounds
+    let minMonthId: MonthId | undefined;
+    let maxMonthId: MonthId | undefined;
+    if (!infinite) {
+      minMonthId = startMonthId;
+      maxMonthId = globalOptions.maxDate
+        ? monthIdFromDate(globalOptions.maxDate) as MonthId
+        : startMonthId;
     }
 
-    const {
-      currentWrapper,
-      jumpTo,
-      nextWrapper,
-      prevWrapper,
-      prevWrapperEnabled,
-      nextWrapperEnabled,
-    } = useNavigation(daysByMonths, createNewMonthWrapper, infinite);
+    // Compute required cache size based on the date range
+    const endMonthId = globalOptions.maxDate
+      ? monthIdFromDate(globalOptions.maxDate) as MonthId
+      : startMonthId;
+    const preGenerateCount = endMonthId - startMonthId + 1;
+    const cacheSize = Math.max(13, preGenerateCount);
 
-    /** Reactive state of the currently displayed month */
-    const currentMonthAndYear = reactive({ month: globalOptions.startOn.getMonth(), year: globalOptions.startOn.getFullYear() });
+    // Create selection state — getOrCreateState is needed by generateMonth
+    const { selectedIds, listeners, getOrCreateState } = createSelectionState<T>(
+      globalOptions.preSelection,
+    );
 
-    // If the current wrapper changes, update the current month and year
-    watch(currentWrapper, (newWrapper) => {
-      if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) { return; }
-      currentMonthAndYear.month = newWrapper.month;
-      currentMonthAndYear.year = newWrapper.year;
+    const nav = createNavigation<MonthId, Month<T>>(
+      startMonthId,
+      (id) => generateMonth(id, globalOptions, fullWeeks, getOrCreateState),
+      infinite,
+      minMonthId,
+      maxMonthId,
+      undefined,
+      undefined,
+      cacheSize,
+    );
+
+    // Pre-generate all months from startOn to maxDate when maxDate is set
+    if (globalOptions.maxDate) {
+      for (let id = startMonthId; id <= endMonthId; id++) {
+        nav.ensureCached(id);
+      }
+    }
+
+    // Flat list of all days across all cached months
+    const days = computed(() => {
+      return nav.allPeriods.value.flatMap(m => m.days);
     });
 
-    // If this property changes, jump to the new month
-    watch(currentMonthAndYear, (newCurrentMonth) => {
-      newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
-      const newMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
-      jumpTo(newMonthYearIndex);
+    // Pure days = days without otherMonth padding
+    const pureDays = computed(() => {
+      return days.value.filter(d => !d.otherMonth);
     });
 
-    watchEffect(() => {
-      disableOutOfRangeDates(days.value, globalOptions.minDate, globalOptions.maxDate);
+    const selectedDates = computed(() => pureDays.value.filter(d => selectedIds.has(d.id)));
+
+    // Reactive state of current month/year for two-way binding
+    const currentMonthAndYear = reactive({
+      month: globalOptions.startOn.getMonth(),
+      year: globalOptions.startOn.getFullYear(),
     });
+
+    // Sync currentMonthAndYear when navigation changes
+    watch(
+      () => nav.currentPeriodId.value,
+      (newId) => {
+        const m = monthFromMonthId(newId);
+        const y = yearFromMonthId(newId);
+        if (currentMonthAndYear.month !== m || currentMonthAndYear.year !== y) {
+          currentMonthAndYear.month = m;
+          currentMonthAndYear.year = y;
+        }
+      },
+    );
+
+    // Sync navigation when currentMonthAndYear is mutated directly
+    watch(
+      currentMonthAndYear,
+      (val) => {
+        const clampedMonth = Math.min(11, Math.max(0, val.month));
+        const newId = monthIdFromYearMonth(val.year, clampedMonth) as MonthId;
+        if (newId !== nav.currentPeriodId.value) {
+          nav.jumpTo(newId);
+        }
+      },
+    );
+
+    // Sorted list of all cached months
+    const months = computed(() => nav.allPeriods.value);
+
+    function nextMonth() {
+      nav.next();
+    }
+
+    function prevMonth() {
+      nav.prev();
+    }
 
     return {
-      currentMonth: currentWrapper,
+      currentMonth: nav.currentPeriod,
       currentMonthAndYear,
-      months: daysByMonths,
+      months,
       days,
-      nextMonth: nextWrapper,
-      prevMonth: prevWrapper,
-      prevMonthEnabled: prevWrapperEnabled,
-      nextMonthEnabled: nextWrapperEnabled,
-      selectedDates: selection,
+      selectedDates,
+      nextMonth,
+      prevMonth,
+      nextMonthEnabled: nav.nextEnabled,
+      prevMonthEnabled: nav.prevEnabled,
       listeners,
     };
   };

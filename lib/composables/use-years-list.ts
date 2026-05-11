@@ -1,25 +1,12 @@
 import { addYears, format as formatDate } from 'date-fns';
-import { GeneratorComposable, NormalizedCalendarOptions, YearInputFormat } from '../types';
+import { GeneratorComposable, NormalizedCalendarOptions, YearsListOptions } from '../types';
 
 const DEFAULT_YEARS_AMOUNT = 10;
 const DEFAULT_YEAR_FORMAT = 'yyyy';
 
-interface YearsListOptions {
-  /** The generated year format. Defaults to `yyyy`.
-   * @see https://date-fns.org/v2.21.3/docs/format
-   */
-  format?: YearInputFormat;
-  /** The initial year of the list. Defaults to 10. */
-  fromYear?: number;
-  /** The final year of the list. Takes precedence over the `amount` option */
-  toYear?: number;
-  /** The amount of years to generate. */
-  amount?: number;
-}
-
 /** Generates a consecutive list of years formatted as strings. */
 export function useYearsList ({ locale }: NormalizedCalendarOptions): (options?: YearsListOptions) => GeneratorComposable {
-  return ({ format, fromYear, toYear, amount }: YearsListOptions = {}): Array<string> => {
+  return ({ format, fromYear, toYear, amount }: YearsListOptions = {}): GeneratorComposable => {
     const currentYear = new Date().getFullYear();
     fromYear ||= currentYear;
 

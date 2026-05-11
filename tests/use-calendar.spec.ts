@@ -4,7 +4,7 @@ import { useCalendar } from '../lib/use-calendar';
 describe('use-calendar main composable', () => {
   it('returns main sub composables', () => {
     const calendar = useCalendar({
-      from: new Date(),
+      startOn: new Date(),
     });
 
     expect(Object.keys(calendar)).toEqual(expect.arrayContaining(['useWeekdays', 'useMonthlyCalendar', 'useWeeklyCalendar']));
