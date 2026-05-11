@@ -19,10 +19,12 @@ import type { NormalizedCalendarOptions } from '../../lib/types';
 
 const defaultOptions: NormalizedCalendarOptions = {
   startOn: startOfDay(new Date()),
-  disabled: [],
+  disabledIds: new Set(),
   firstDayOfWeek: 0,
   locale: undefined,
+  preSelection: [],
   meta: () => undefined,
+  mode: undefined,
 };
 
 const referenceDay = new Date(2022, 4, 15);

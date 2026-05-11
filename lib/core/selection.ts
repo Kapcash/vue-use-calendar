@@ -1,36 +1,37 @@
-import { computed, reactive, shallowReactive } from "vue";
-import { CalendarDay, CalendarDayState, Listeners, StateProvider } from "../types";
+import { computed, reactive, shallowReactive, watchEffect } from "vue";
+import { CalendarDay, CalendarDayState, ModeHandlers, SelectionHandlers, SelectionMode, StateProvider } from "../types";
 import { dayIdFromDate } from "../utils/date";
 
 /**
  * Centralized selection and hover state management.
  *
- * Owns a `stateMap` — a Map<string, CalendarDayState> that is the single
- * source of truth for per-day UI state. All CalendarDay objects with the same
- * `id` share the **same** state reference via `getOrCreateState()`.
+ * Owns a `stateMap` — a shallowReactive Map<string, CalendarDayState> that is
+ * the single source of truth for per-day UI state. All CalendarDay objects with
+ * the same `id` share the **same** state reference via `getOrCreateState()`.
  *
  * Range computations use lexicographic ID comparison ("YYYY-MM-DD") over the
  * stateMap keys, so duplicate entries from otherMonth padding never distort ranges.
  *
- * `selectedDates` is intentionally NOT returned here — it depends on the full
- * day list, which doesn't exist yet when createSelectionState is called. Each
- * composable computes it from `selectedIds` after navigation is wired up.
+ * State updates are targeted — only the IDs that actually change state are touched,
+ * keeping hover and selection fast even for large calendars.
+ *
+ * `betweenIds` reacts to both `selectedIds` and `stateMap` (which is shallowReactive),
+ * so days in newly navigated months are immediately flagged as `between: true` without
+ * requiring a user interaction.
  */
-export function createSelectionState<T>(preSelection: Date[]) {
-  // Populate from preSelection
+export function createSelectionState<T, M extends SelectionMode | undefined = undefined>(
+  preSelection: Date[],
+  mode?: M,
+) {
   const preSelectedIds = preSelection.map(dayIdFromDate);
 
   const selectedIds = reactive(new Set<string>(preSelectedIds));
   const hoveredIds = reactive(new Set<string>());
-  const stateMap = new Map<string, CalendarDayState>();
+  // shallowReactive so computed()s that iterate it re-run when entries are added/removed
+  const stateMap = shallowReactive(new Map<string, CalendarDayState>());
 
   // ── State provider (shared with calendar-day creation) ───────────
 
-  /**
-   * Returns the shared CalendarDayState for a given day ID.
-   * Creates one if it doesn't exist yet, seeded with the correct initial
-   * selected/disabled values.
-   */
   const getOrCreateState: StateProvider = (id: string, disabled: boolean): CalendarDayState => {
     let state = stateMap.get(id);
     if (!state) {
@@ -48,8 +49,8 @@ export function createSelectionState<T>(preSelection: Date[]) {
   // ── Derived computeds ────────────────────────────────────────────
 
   /** Compute the set of day IDs strictly between the two selected endpoints.
-   *  Uses lexicographic ID comparison ("YYYY-MM-DD") instead of array indices,
-   *  so duplicate entries from otherMonth padding don't cause wrong ranges. */
+   *  Reacts to both selectedIds and stateMap, so newly navigated months that
+   *  fall within the range get flagged immediately without a user interaction. */
   const betweenIds = computed<Set<string>>(() => {
     if (selectedIds.size !== 2) {
       return new Set();
@@ -65,15 +66,43 @@ export function createSelectionState<T>(preSelection: Date[]) {
     return result;
   });
 
-  // ── State sync helpers ───────────────────────────────────────────
+  // ── Reactive between-state sync ──────────────────────────────────
 
-  function syncAllStates() {
-    const between = betweenIds.value;
-    for (const [id, state] of stateMap) {
-      state.selected = selectedIds.has(id);
-      state.hovered = hoveredIds.has(id);
-      state.between = between.has(id);
+  // watchEffect with flush: 'sync' propagates between-state to the stateMap
+  // immediately on every reactive change (no component flush cycle to wait for).
+  // This ensures between-state is accurate synchronously after any selection change
+  // and also re-runs when new days are added to stateMap via navigation.
+  let prevBetweenIds = new Set<string>();
+  watchEffect(() => {
+    const next = betweenIds.value;
+    // Clear states that are no longer between
+    for (const id of prevBetweenIds) {
+      if (!next.has(id)) {
+        const state = stateMap.get(id);
+        if (state) { state.between = false; }
+      }
     }
+    // Set states that are newly between
+    for (const id of next) {
+      const state = stateMap.get(id);
+      if (state) { state.between = true; }
+    }
+    prevBetweenIds = new Set(next);
+  }, { flush: 'sync' });
+
+  // ── Targeted state helpers ───────────────────────────────────────
+
+  function setSelected(id: string, value: boolean) {
+    const state = stateMap.get(id);
+    if (state) { state.selected = value; }
+  }
+
+  function clearHoverStates() {
+    for (const id of hoveredIds) {
+      const state = stateMap.get(id);
+      if (state) { state.hovered = false; }
+    }
+    hoveredIds.clear();
   }
 
   // ── Listeners ────────────────────────────────────────────────────
@@ -81,60 +110,95 @@ export function createSelectionState<T>(preSelection: Date[]) {
   function selectSingle(day: CalendarDay<T>) {
     if (day.state.disabled) { return; }
     const wasSelected = selectedIds.has(day.id);
+    // Deselect all currently selected
+    for (const id of selectedIds) {
+      setSelected(id, false);
+    }
     selectedIds.clear();
     if (!wasSelected) {
       selectedIds.add(day.id);
+      setSelected(day.id, true);
     }
-    syncAllStates();
   }
 
   function selectRange(day: CalendarDay<T>) {
     if (day.state.disabled) { return; }
     if (selectedIds.size >= 2) {
+      for (const id of selectedIds) {
+        setSelected(id, false);
+      }
       selectedIds.clear();
     }
     if (selectedIds.has(day.id)) {
       selectedIds.delete(day.id);
+      setSelected(day.id, false);
     } else {
       selectedIds.add(day.id);
+      setSelected(day.id, true);
     }
-    hoveredIds.clear();
-    syncAllStates();
+    clearHoverStates();
   }
 
   function selectMultiple(day: CalendarDay<T>) {
     if (day.state.disabled) { return; }
     if (selectedIds.has(day.id)) {
       selectedIds.delete(day.id);
+      setSelected(day.id, false);
     } else {
       selectedIds.add(day.id);
+      setSelected(day.id, true);
     }
-    syncAllStates();
   }
 
   function hoverRange(day: CalendarDay<T>) {
     if (selectedIds.size !== 1) { return; }
-    hoveredIds.clear();
+    clearHoverStates();
 
-    const selectedId = Array.from(selectedIds)[0];
+    const selectedId = selectedIds.values().next().value as string;
     const hovId = day.id;
     const [lo, hi] = selectedId < hovId ? [selectedId, hovId] : [hovId, selectedId];
 
-    for (const [id] of stateMap) {
+    for (const [id, state] of stateMap) {
       if (id > lo && id < hi) {
         hoveredIds.add(id);
+        state.hovered = true;
       }
     }
     hoveredIds.add(day.id);
-    syncAllStates();
+    day.state.hovered = true;
   }
 
   function resetHover() {
-    hoveredIds.clear();
-    syncAllStates();
+    clearHoverStates();
   }
 
-  const listeners: Listeners<T> = {
+  // ── Programmatic API ─────────────────────────────────────────────
+
+  function selectDate(date: Date) {
+    const id = dayIdFromDate(date);
+    const state = stateMap.get(id);
+    // Disabled check via stateMap if the day is rendered, otherwise allow
+    if (state?.disabled) { return; }
+    const fakeDay: CalendarDay<T> = { id, state: state ?? { selected: false, hovered: false, between: false, disabled: false } } as CalendarDay<T>;
+    switch (mode) {
+      case 'single': return selectSingle(fakeDay);
+      case 'range': return selectRange(fakeDay);
+      case 'multiple': return selectMultiple(fakeDay);
+      default: return selectSingle(fakeDay);
+    }
+  }
+
+  function clearSelection() {
+    for (const id of selectedIds) {
+      setSelected(id, false);
+    }
+    selectedIds.clear();
+    clearHoverStates();
+  }
+
+  // ── Build handlers narrowed by mode ─────────────────────────────
+
+  const allHandlers: SelectionHandlers<T> = {
     selectSingle,
     selectRange,
     selectMultiple,
@@ -142,9 +206,19 @@ export function createSelectionState<T>(preSelection: Date[]) {
     resetHover,
   };
 
+  const listeners: ModeHandlers<T, M> = (
+    mode === 'single' ? { selectSingle } :
+    mode === 'range' ? { selectRange, hoverRange, resetHover } :
+    mode === 'multiple' ? { selectMultiple } :
+    allHandlers
+  ) as ModeHandlers<T, M>;
+
   return {
     selectedIds,
     listeners,
     getOrCreateState,
+    selectDate,
+    clearSelection,
   };
 }
+

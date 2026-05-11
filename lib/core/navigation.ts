@@ -3,12 +3,14 @@ import { computed, shallowReactive, ref, ComputedRef } from "vue";
 /**
  * Generic period navigation with a lazy Map-based cache.
  *
- * @param startId       - The initial period ID
+ * @param startId        - The initial period ID
  * @param generatePeriod - Factory to create a period on cache miss
- * @param infinite       - If true, no bounds checking
- * @param minId          - Minimum period ID (for finite mode)
- * @param maxId          - Maximum period ID (for finite mode)
- * @param maxCacheSize   - Maximum number of cached periods (evicts farthest from current)
+ * @param infinite        - If true, no bounds checking
+ * @param minId           - Minimum period ID (for finite mode)
+ * @param maxId           - Maximum period ID (for finite mode)
+ * @param maxCacheSize    - Maximum number of cached periods (evicts farthest from current)
+ * @param canEvict        - Optional predicate; return false to pin a period in the cache.
+ *                          Falls back to evicting the absolute farthest if all entries are pinned.
  */
 export function createNavigation<TId extends number, TPeriod>(
   startId: TId,
@@ -19,6 +21,7 @@ export function createNavigation<TId extends number, TPeriod>(
   nextId?: (id: TId) => TId,
   prevId?: (id: TId) => TId,
   maxCacheSize = 13,
+  canEvict?: (id: TId) => boolean,
 ) {
   const currentPeriodId = ref<TId>(startId);
   const periodCache = shallowReactive(new Map<TId, TPeriod>());
@@ -32,33 +35,37 @@ export function createNavigation<TId extends number, TPeriod>(
   function ensureCached(id: TId): TPeriod {
     if (!periodCache.has(id)) {
       periodCache.set(id, generatePeriod(id));
-      evictIfNeeded();
+      evictIfNeeded(id);
     }
     return periodCache.get(id)!;
   }
 
   /**
-   * Evicts the cached period farthest from the current period if cache size exceeds maxCacheSize.
-   * 
-   * How it works:
-   * 1. If cache is within bounds, do nothing
-   * 2. Find the cached period with the maximum distance from currentPeriodId
-   * 3. Delete that farthest period from the cache
+   * Evicts the cached period farthest from `referenceId` if cache size exceeds maxCacheSize.
+   * Periods where `canEvict(id)` returns false are skipped; if all entries are pinned the
+   * absolute farthest is evicted as a last resort so the cache never grows unboundedly.
    */
-  function evictIfNeeded() {
+  function evictIfNeeded(referenceId: TId = currentPeriodId.value) {
     if (periodCache.size <= maxCacheSize) { return; }
-    const currentId = currentPeriodId.value;
     let farthestKey: TId | undefined;
     let farthestDist = -1;
+    let farthestEvictableKey: TId | undefined;
+    let farthestEvictableDist = -1;
     for (const key of periodCache.keys()) {
-      const dist = Math.abs(key - currentId);
+      const dist = Math.abs(key - referenceId);
       if (dist > farthestDist) {
         farthestDist = dist;
         farthestKey = key;
       }
+      if ((!canEvict || canEvict(key)) && dist > farthestEvictableDist) {
+        farthestEvictableDist = dist;
+        farthestEvictableKey = key;
+      }
     }
-    if (farthestKey !== undefined) {
-      periodCache.delete(farthestKey);
+    // Prefer a non-pinned entry; fall back to the absolute farthest
+    const toEvict = farthestEvictableKey ?? farthestKey;
+    if (toEvict !== undefined) {
+      periodCache.delete(toEvict);
     }
   }
 

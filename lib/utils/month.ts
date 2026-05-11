@@ -1,5 +1,5 @@
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from "date-fns";
-import { CalendarDay, Month, NormalizedCalendarOptions, MonthId, StateProvider } from "../types";
+import { CalendarDay, Month, NormalizedCalendarOptions, MonthId, StateProvider, SelectionMode } from "../types";
 import { generateConsecutiveDays } from "../core/calendar-day";
 
 // ── Month ID arithmetic ──────────────────────────────────────────────────────
@@ -27,9 +27,9 @@ export function monthFromMonthId(monthId: MonthId): number {
 /**
  * Generate a Month object for a given MonthId.
  */
-export function generateMonth<T>(
+export function generateMonth<T, M extends SelectionMode | undefined = undefined>(
   monthId: MonthId,
-  options: NormalizedCalendarOptions<T>,
+  options: NormalizedCalendarOptions<T, M>,
   fullWeeks: boolean,
   stateProvider?: StateProvider,
 ): Month<T> {
@@ -58,11 +58,11 @@ export function generateMonth<T>(
  * Pad a month's days array so it starts and ends on full weeks.
  * Padding days are marked with `otherMonth: true`.
  */
-function padFullWeeks<T>(
+function padFullWeeks<T, M extends SelectionMode | undefined = undefined>(
   days: CalendarDay<T>[],
   monthStart: Date,
   monthEnd: Date,
-  options: NormalizedCalendarOptions<T>,
+  options: NormalizedCalendarOptions<T, M>,
   stateProvider?: StateProvider,
 ): void {
   const weekStart = startOfWeek(monthStart, { weekStartsOn: options.firstDayOfWeek });

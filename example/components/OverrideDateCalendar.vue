@@ -68,6 +68,7 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar<PriceMeta>({
     const priceObj = pricesByDay.find(price => price.day === date.toLocaleDateString());
     return { price: priceObj?.price || 0 };
   },
+  mode: 'range',
 });
 
 const { nextMonth, prevMonth, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners } = useMonthlyCalendar({ infinite: false });

@@ -1,5 +1,5 @@
 import { startOfWeek, endOfWeek, getWeek, getWeekYear, addDays } from "date-fns";
-import { Week, NormalizedCalendarOptions, WeekId, StateProvider, FirstDayOfWeek } from "../types";
+import { Week, NormalizedCalendarOptions, WeekId, StateProvider, FirstDayOfWeek, SelectionMode } from "../types";
 import { generateConsecutiveDays } from "../core/calendar-day";
 
 // ── Week ID arithmetic ───────────────────────────────────────────────────────
@@ -39,9 +39,9 @@ export function weekIdFromDate(date: Date, firstDayOfWeek: FirstDayOfWeek): Week
 /**
  * Generate a Week object for a given WeekId.
  */
-export function generateWeek<T>(
+export function generateWeek<T, M extends SelectionMode | undefined = undefined>(
   weekId: WeekId,
-  options: NormalizedCalendarOptions<T>,
+  options: NormalizedCalendarOptions<T, M>,
   stateProvider?: StateProvider,
 ): Week<T> {
   const weekNumber = weekFromWeekId(weekId);

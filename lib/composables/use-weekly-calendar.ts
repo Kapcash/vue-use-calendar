@@ -1,15 +1,15 @@
-import { computed } from "vue";
-import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId } from "../types";
+import { computed, reactive } from "vue";
+import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId, SelectionMode } from "../types";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
-import { weekIdFromDate, generateWeek, makeNextWeekId, makePrevWeekId } from "../utils/week";
+import { weekIdFromDate, weekFromWeekId, yearFromWeekId, generateWeek, makeNextWeekId, makePrevWeekId } from "../utils/week";
 
 const DEFAULT_WEEKLY_OPTS: WeeklyOptions = {
   infinite: false,
 };
 
-export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
-  return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<T> {
+export function weeklyCalendar<T, M extends SelectionMode | undefined = undefined>(globalOptions: NormalizedCalendarOptions<T, M>) {
+  return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<T, M> {
     const { infinite } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
     const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
@@ -24,8 +24,9 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
     }
 
     // Create selection state — getOrCreateState is needed by generateWeek
-    const { selectedIds, listeners, getOrCreateState } = createSelectionState<T>(
+    const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
+      globalOptions.mode,
     );
 
     const nextWeekId = makeNextWeekId(globalOptions.firstDayOfWeek);
@@ -39,6 +40,17 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       maxWeekId,
       nextWeekId,
       prevWeekId,
+      undefined,
+      // Pin weeks that contain a selected day so navigating away doesn't drop the selection.
+      (id) => {
+        for (const dayId of selectedIds) {
+          const year = parseInt(dayId.substring(0, 4));
+          const month = parseInt(dayId.substring(5, 7)) - 1;
+          const day = parseInt(dayId.substring(8, 10));
+          if (weekIdFromDate(new Date(year, month, day), globalOptions.firstDayOfWeek) === id) { return false; }
+        }
+        return true;
+      },
     );
 
     // Pre-generate all weeks in finite mode
@@ -51,6 +63,13 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       }
     }
 
+    // Eagerly cache weeks that contain pre-selected dates so selectedDates is
+    // accurate even for dates that haven't been navigated to yet.
+    for (const date of globalOptions.preSelection) {
+      const id = weekIdFromDate(date, globalOptions.firstDayOfWeek);
+      nav.ensureCached(id);
+    }
+
     const weeks = computed(() => nav.allPeriods.value);
 
     const days = computed(() => {
@@ -59,9 +78,23 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
 
     const selectedDates = computed(() => days.value.filter(d => selectedIds.has(d.id)));
 
+    // Reactive currentWeekAndYear backed by nav — getter/setter removes watch loops.
+    const currentWeekAndYear = reactive({
+      get weekNumber() { return weekFromWeekId(nav.currentPeriodId.value); },
+      set weekNumber(value: number) {
+        const newId = (yearFromWeekId(nav.currentPeriodId.value) * 100 + value) as WeekId;
+        if (newId !== nav.currentPeriodId.value) { nav.jumpTo(newId); }
+      },
+      get year() { return yearFromWeekId(nav.currentPeriodId.value); },
+      set year(value: number) {
+        const newId = (value * 100 + currentWeekAndYear.weekNumber) as WeekId;
+        if (newId !== nav.currentPeriodId.value) { nav.jumpTo(newId); }
+      },
+    });
 
     return {
       currentWeek: nav.currentPeriod,
+      currentWeekAndYear,
       weeks,
       days,
       selectedDates,
@@ -70,6 +103,9 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       nextWeekEnabled: nav.nextEnabled,
       prevWeekEnabled: nav.prevEnabled,
       listeners,
+      selectDate,
+      clearSelection,
     };
   };
 }
+

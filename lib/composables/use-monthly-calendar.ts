@@ -1,12 +1,12 @@
-import { computed, reactive, watch } from "vue";
-import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOptions, MonthId } from "../types";
+import { computed, reactive } from "vue";
+import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOptions, MonthId, SelectionMode } from "../types";
 import { monthIdFromDate, monthIdFromYearMonth, monthFromMonthId, yearFromMonthId, generateMonth } from "../utils/month";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
 
-export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
-  return function useMonthlyCalendar(opts: MonthlyOptions = {}): MonthlyCalendarComposable<T> {
-    const { infinite = true, fullWeeks = true } = opts;
+export function monthlyCalendar<T, M extends SelectionMode | undefined = undefined>(globalOptions: NormalizedCalendarOptions<T, M>) {
+  return function useMonthlyCalendar(opts: MonthlyOptions = {}): MonthlyCalendarComposable<T, M> {
+    const { infinite = false, fullWeeks = true } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -28,8 +28,9 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
     const cacheSize = Math.max(13, preGenerateCount);
 
     // Create selection state — getOrCreateState is needed by generateMonth
-    const { selectedIds, listeners, getOrCreateState } = createSelectionState<T>(
+    const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
+      globalOptions.mode,
     );
 
     const nav = createNavigation<MonthId, Month<T>>(
@@ -41,6 +42,15 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       undefined,
       undefined,
       cacheSize,
+      // Pin months that contain a selected day so navigating away doesn't drop the selection.
+      (id) => {
+        for (const dayId of selectedIds) {
+          const year = parseInt(dayId.substring(0, 4));
+          const month = parseInt(dayId.substring(5, 7)) - 1; // 0-indexed
+          if (monthIdFromYearMonth(year, month) === id) { return false; }
+        }
+        return true;
+      },
     );
 
     // Pre-generate all months from startOn to maxDate when maxDate is set
@@ -48,6 +58,13 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       for (let id = startMonthId; id <= endMonthId; id++) {
         nav.ensureCached(id);
       }
+    }
+
+    // Eagerly cache months that contain pre-selected dates so selectedDates is
+    // accurate even for dates that haven't been navigated to yet.
+    for (const date of globalOptions.preSelection) {
+      const id = monthIdFromDate(date) as MonthId;
+      nav.ensureCached(id);
     }
 
     // Flat list of all days across all cached months
@@ -62,36 +79,20 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
 
     const selectedDates = computed(() => pureDays.value.filter(d => selectedIds.has(d.id)));
 
-    // Reactive state of current month/year for two-way binding
+    // Reactive currentMonthAndYear backed by nav — getter/setter removes watch loops.
     const currentMonthAndYear = reactive({
-      month: globalOptions.startOn.getMonth(),
-      year: globalOptions.startOn.getFullYear(),
+      get month() { return monthFromMonthId(nav.currentPeriodId.value); },
+      set month(value: number) {
+        const clamped = Math.min(11, Math.max(0, value));
+        const newId = monthIdFromYearMonth(currentMonthAndYear.year, clamped) as MonthId;
+        if (newId !== nav.currentPeriodId.value) { nav.jumpTo(newId); }
+      },
+      get year() { return yearFromMonthId(nav.currentPeriodId.value); },
+      set year(value: number) {
+        const newId = monthIdFromYearMonth(value, currentMonthAndYear.month) as MonthId;
+        if (newId !== nav.currentPeriodId.value) { nav.jumpTo(newId); }
+      },
     });
-
-    // Sync currentMonthAndYear when navigation changes
-    watch(
-      () => nav.currentPeriodId.value,
-      (newId) => {
-        const m = monthFromMonthId(newId);
-        const y = yearFromMonthId(newId);
-        if (currentMonthAndYear.month !== m || currentMonthAndYear.year !== y) {
-          currentMonthAndYear.month = m;
-          currentMonthAndYear.year = y;
-        }
-      },
-    );
-
-    // Sync navigation when currentMonthAndYear is mutated directly
-    watch(
-      currentMonthAndYear,
-      (val) => {
-        const clampedMonth = Math.min(11, Math.max(0, val.month));
-        const newId = monthIdFromYearMonth(val.year, clampedMonth) as MonthId;
-        if (newId !== nav.currentPeriodId.value) {
-          nav.jumpTo(newId);
-        }
-      },
-    );
 
     // Sorted list of all cached months
     const months = computed(() => nav.allPeriods.value);
@@ -109,12 +110,16 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       currentMonthAndYear,
       months,
       days,
+      pureDays,
       selectedDates,
       nextMonth,
       prevMonth,
       nextMonthEnabled: nav.nextEnabled,
       prevMonthEnabled: nav.prevEnabled,
       listeners,
+      selectDate,
+      clearSelection,
     };
   };
 }
+

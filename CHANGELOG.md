@@ -1,5 +1,50 @@
 # Changelog
 
+## v2.1.0
+
+### New Features
+
+- **`mode` option on `useCalendar`.** Pass `mode: 'single' | 'range' | 'multiple'` to constrain which selection handlers are available. The TypeScript type of `listeners` is narrowed to only the methods valid for that mode via `ModeHandlers<T, M>`. Runtime object also only contains the relevant functions.
+
+- **`pureDays` exposed on `useMonthlyCalendar`.** `pureDays: ComputedRef<CalendarDay<T>[]>` is now returned alongside `days`, filtering out `otherMonth` padding. Previously consumers had to filter manually.
+
+- **`currentWeekAndYear` on `useWeeklyCalendar`.** Mirrors the monthly `currentMonthAndYear` API. `{ year: number; weekNumber: number }` reactive object backed by getter/setters \u2014 mutate directly to jump to any week without navigating through intermediate ones.
+
+- **Programmatic selection API.** Both `useMonthlyCalendar` and `useWeeklyCalendar` now return `selectDate(date: Date)` and `clearSelection()` for external triggers that don\u2019t have a `CalendarDay` object (form resets, URL-driven state, etc.).
+
+- **Pre-selected dates always reflected in `selectedDates`.** Both composables now eagerly cache the period(s) containing each `preSelection` date after navigation is set up, so `selectedDates` is accurate immediately \u2014 even if the user hasn\u2019t navigated to that month/week yet.
+
+### Breaking Changes
+
+- **`Listeners<T>` renamed to `SelectionHandlers<T>`.** The interface and all references have been updated. If you imported `Listeners` directly from `vue-use-calendar`, update to `SelectionHandlers`.
+
+- **`infinite` now defaults to `false` for both `useMonthlyCalendar` and `useWeeklyCalendar`.** Previously monthly defaulted to `true`. Pass `infinite: true` explicitly to restore the old behaviour.
+
+- **`disabled` in `NormalizedCalendarOptions` replaced by `disabledIds: Set<string>`.** Internal change only \u2014 affects custom composables that accept `NormalizedCalendarOptions` directly. Public `CalendarOptions.disabled` API is unchanged.
+
+### Bug Fixes
+
+- **`between` state now updates when navigating into a new month mid-range.** `stateMap` is now `shallowReactive`, so `betweenIds` reacts to new entries added by navigation. Previously, days in a newly navigated-to month that fell within a selected range were never flagged as `between: true` until the next selection event.
+
+- **O(n) full-state sync eliminated.** Replaced `syncAllStates()` (which iterated the entire `stateMap` on every interaction) with targeted delta updates. Only the specific state entries that change are written. `between` propagation uses `watchEffect({ flush: 'sync' })` to apply only the diff between previous and next `betweenIds`.
+
+- **`hoverRange` no longer allocates an array to read one Set element.** `Array.from(selectedIds)[0]` replaced with `selectedIds.values().next().value`.
+
+- **`useWeekdays` no longer anchors to the current date.** The internal reference Sunday is now a fixed date (`2000-01-02`) instead of `nextSunday(new Date())`, making output deterministic regardless of when the composable is called.
+
+- **`currentMonthAndYear` bidirectional watch loop eliminated.** The reactive object now uses getter/setter properties backed directly by `nav.currentPeriodId` \u2014 no `watch` calls, no guard conditions.
+
+- **`disabled` check in `isDateDisabled` is now O(1).** Disabled dates are normalized to a `Set<string>` of `\"YYYY-MM-DD\"` IDs at the `normalizeGlobalParameters` boundary, replacing an O(n) `isSameDay` array scan per generated day.
+
+### Internal
+
+- `createSelectionState<T, M>()` now accepts `mode` and returns `ModeHandlers<T, M>` as `listeners`.
+- `stateMap` promoted from plain `Map` to `shallowReactive(Map)` in `lib/core/selection.ts`.
+- `syncAllStates()` removed entirely from `lib/core/selection.ts`.
+- `NormalizedCalendarOptions.disabled: Date[]` \u2192 `disabledIds: Set<string>`.
+- `GeneratorComposable` type alias renamed to `StringList`.
+- Fixed `lib/utils/week.ts` importing `FirstDayOfWeek` from `../../dist` (build output) instead of `../types`.
+
 ## v2.0.0
 
 ### Breaking Changes
