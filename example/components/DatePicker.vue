@@ -26,7 +26,6 @@
             :key="day.id"
             :day="day"
             @click="listeners.selectSingle(day)"
-            @mouseleave="listeners.resetHover()"
           />
         </div>
       </div>
@@ -50,6 +49,7 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   disabled: disabledDates,
   firstDayOfWeek,
   preSelection: preselectionDates,
+  mode: 'single',
 });
 
 const { months, currentMonth, listeners, selectedDates } = useMonthlyCalendar();

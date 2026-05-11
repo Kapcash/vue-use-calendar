@@ -1,6 +1,6 @@
 import { shallowReactive } from "vue";
 import { addDays, startOfDay, isAfter } from "date-fns";
-import { CalendarDay, CalendarDayState, NormalizedCalendarOptions, StateProvider } from "../types";
+import { CalendarDay, CalendarDayState, NormalizedCalendarOptions, StateProvider, SelectionMode } from "../types";
 import { dayIdFromDate, checkIsToday, checkIsWeekend, isDateDisabled } from "../utils/date";
 
 /**
@@ -11,16 +11,16 @@ import { dayIdFromDate, checkIsToday, checkIsWeekend, isDateDisabled } from "../
  * (e.g. a "real" day and its otherMonth padding copy) share the exact same
  * reactive state reference.
  */
-export function createCalendarDay<T>(
+export function createCalendarDay<T, M extends SelectionMode | undefined = undefined>(
   date: Date,
-  options: NormalizedCalendarOptions<T>,
+  options: NormalizedCalendarOptions<T, M>,
   overrides?: { otherMonth?: boolean; disabled?: boolean },
   stateProvider?: StateProvider,
 ): CalendarDay<T> {
   const d = startOfDay(date);
   const id = dayIdFromDate(d);
   const otherMonth = overrides?.otherMonth ?? false;
-  const disabled = overrides?.disabled ?? isDateDisabled(d, options.disabled, options.minDate, options.maxDate);
+  const disabled = overrides?.disabled ?? isDateDisabled(d, options.disabledIds, options.minDate, options.maxDate);
 
   const state: CalendarDayState = stateProvider
     ? stateProvider(id, disabled)
@@ -52,10 +52,10 @@ export function createCalendarDay<T>(
  * Never mutates the input dates.
  * Throws if `from > to`.
  */
-export function generateConsecutiveDays<T>(
+export function generateConsecutiveDays<T, M extends SelectionMode | undefined = undefined>(
   from: Date,
   to: Date,
-  options: NormalizedCalendarOptions<T>,
+  options: NormalizedCalendarOptions<T, M>,
   overrides?: { otherMonth?: boolean },
   stateProvider?: StateProvider,
 ): CalendarDay<T>[] {

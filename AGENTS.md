@@ -60,7 +60,7 @@ example/                    # Vue 3 + Vite demo app (deployed to GitHub Pages)
 
 ### Entry Point
 
-`useCalendar<T>(options)` is the single entry point. It accepts global options (start date, min/max, disabled dates, locale, meta factory, first day of week, pre-selection) and returns sub-composables:
+`useCalendar<T, M>(options)` is the single entry point. It accepts global options (start date, min/max, disabled dates, locale, meta factory, first day of week, pre-selection, selection mode) and returns sub-composables:
 
 - `useMonthlyCalendar(opts?)` — monthly view with navigation, selection, days grouped by month
 - `useWeeklyCalendar(opts?)` — weekly view with navigation, selection, days grouped by week
@@ -99,12 +99,15 @@ The generic `T` flows from `useCalendar<T>()` through all composable return type
 
 ### Selection & Range Logic
 
-`createSelectionState<T>()` in `lib/core/selection.ts` manages selection centrally:
+`createSelectionState<T, M>()` in `lib/core/selection.ts` manages selection centrally:
 
-- **Data structures:** `selectedIds` and `hoveredIds` are `reactive(Set<string>)`. The `stateMap` is a plain `Map<string, CalendarDayState>`.
-- **Range computation:** `betweenIds` and `hoverRange` use **lexicographic comparison** of `"YYYY-MM-DD"` IDs over the `stateMap` keys — not array indices. This avoids issues with duplicate entries from otherMonth padding across cached months.
-- **State sync:** `syncAllStates()` iterates the entire `stateMap` and reconciles `selected`, `hovered`, `between` flags from the reactive sets. Called after every listener mutation.
-- **Listeners:** `selectSingle`, `selectRange`, `selectMultiple`, `hoverRange`, `resetHover` — exposed via the `Listeners<T>` interface.
+- **Data structures:** `selectedIds` and `hoveredIds` are `reactive(Set<string>)`. The `stateMap` is a `shallowReactive(Map<string, CalendarDayState>)` — reactive so that `betweenIds` re-runs when new days are added by navigation.
+- **Range computation:** `betweenIds` uses **lexicographic comparison** of `"YYYY-MM-DD"` IDs over the `stateMap` keys — not array indices.
+- **Between-state propagation:** A `watchEffect({ flush: 'sync' })` applies delta `between` state changes (prev vs. next `betweenIds`) immediately after any selection or navigation change. No global sync — only affected IDs are touched.
+- **Targeted updates:** All state mutations (select, hover, reset) are O(affected IDs) — only the specific entries that change are written. No more O(n) full-stateMap scan.
+- **Selection mode:** Accepts an optional `mode: SelectionMode` (`'single' | 'range' | 'multiple'`). The returned `listeners` object is narrowed to only the handlers valid for that mode via the `ModeHandlers<T, M>` conditional type. Runtime object also only contains the relevant functions.
+- **Handlers:** `selectSingle`, `selectRange`, `selectMultiple`, `hoverRange`, `resetHover` — exposed via the `SelectionHandlers<T>` interface (or a narrowed `ModeHandlers<T, M>` subset).
+- **Programmatic API:** `selectDate(date: Date)` and `clearSelection()` are also returned, for external triggers that don't have a `CalendarDay` object.
 
 ### Navigation
 
@@ -118,27 +121,36 @@ The generic `T` flows from `useCalendar<T>()` through all composable return type
 
 ### Monthly Composable
 
-`monthlyCalendar<T>()` is a curried higher-order function. Key implementation details:
+`monthlyCalendar<T, M>()` is a curried higher-order function. Key implementation details:
 
-- **Lazy wiring pattern:** Selection state is created before navigation (to obtain `getOrCreateState`), but `pureDays` depends on navigation output. A `pureDaysHolder` indirection resolves this chicken-and-egg dependency.
-- **Pre-generation:** When `maxDate` is set and `infinite: false`, all months in range are eagerly cached.
+- **`infinite` default:** `false`.
+- **Pre-generation:** When `maxDate` is set, all months in range are eagerly cached.
+- **Pre-selection cache:** After navigation is set up, each month containing a `preSelection` date is eagerly cached via `nav.ensureCached()`. This ensures `selectedDates` is accurate for pre-selected dates regardless of whether the user has navigated there.
 - **`days`:** `computed` flat list of all days across all cached months (includes otherMonth padding).
-- **`pureDays`:** `days` filtered by `!otherMonth`.
-- **`currentMonthAndYear`:** `reactive({ month, year })` with bidirectional `watch` to/from `nav.currentPeriodId`.
+- **`pureDays`:** `days` filtered by `!otherMonth`. Now exposed in the composable return value.
+- **`currentMonthAndYear`:** `reactive` object with getter/setter properties backed directly by `nav.currentPeriodId`. Setting `.month` or `.year` calls `nav.jumpTo()` inline. No `watch` calls, no loop risk.
+- **Programmatic API:** `selectDate(date: Date)` and `clearSelection()` are forwarded from `createSelectionState`.
 
 ### Weekly Composable
 
 Same curried pattern as monthly. Uses custom `nextWeekId`/`prevWeekId` for year-boundary arithmetic. No otherMonth padding concept.
+
+- **`infinite` default:** `false`.
+- **`currentWeekAndYear`:** `reactive` object with getter/setter properties backed by `nav.currentPeriodId`. Setting `.weekNumber` or `.year` calls `nav.jumpTo()` inline. Mirrors `currentMonthAndYear` in the monthly composable.
+- **Pre-selection cache:** Same eager `nav.ensureCached()` pattern as monthly.
+- **Programmatic API:** `selectDate(date: Date)` and `clearSelection()` forwarded from `createSelectionState`.
 
 ## Coding Conventions
 
 ### TypeScript
 
 - Strict mode enabled (`strict: true` in tsconfig, `target: ESNext`, `moduleResolution: bundler`).
-- Generic `<T>` (metadata type) flows through all composables and `CalendarDay<T>`. No class inheritance.
+- Generic `<T>` (metadata type) and `<M extends SelectionMode | undefined>` (mode type) flow through all composables and `CalendarDay<T>`. No class inheritance.
 - Types and interfaces live in `lib/types.ts`; core logic in `lib/core/`.
 - Semicolons are required (`@typescript-eslint/semi: error`).
 - Trailing commas required on multiline (`comma-dangle: always-multiline`).
+- `Listeners<T>` is now `SelectionHandlers<T>`. Mode-narrowed variant is `ModeHandlers<T, M>`.
+- `disabled: Date[]` in `NormalizedCalendarOptions` is now `disabledIds: Set<string>` for O(1) lookup.
 
 ### Composable Pattern
 
@@ -164,5 +176,8 @@ Same curried pattern as monthly. Uses custom `nextWeekId`/`prevWeekId` for year-
 
 - **Shared state across months:** When using `fullWeeks: true`, otherMonth days share their `CalendarDayState` with the original month via the `StateProvider`. Always use the shared `getOrCreateState` when creating days — never create standalone state for days that may appear in multiple periods.
 - **Range computation uses string comparison, not array indices.** Day IDs (`"YYYY-MM-DD"`) sort lexicographically = chronologically. The `betweenIds` and `hoverRange` logic iterates `stateMap` keys and compares IDs directly, avoiding issues with duplicate entries from otherMonth padding.
-- **Lazy wiring pattern.** In `use-monthly-calendar.ts`, `pureDaysHolder` resolves a circular dependency: selection state needs `pureDays`, but `pureDays` depends on navigation which needs `getOrCreateState` from selection.
+- **`between` state is propagated by `watchEffect({ flush: 'sync' })`**, not by a full O(n) sync. The effect runs synchronously after any `selectedIds` or `stateMap` change. Never call `syncAllStates()` — it no longer exists.
+- **`stateMap` is `shallowReactive`.** This is what makes `betweenIds` react to new navigation entries. Do not replace it with a plain `Map`.
+- **`currentMonthAndYear` and `currentWeekAndYear` use getter/setters** backed by `nav.currentPeriodId`. They are not plain reactive data properties — do not add `watch` calls on top of them.
+- **`disabled` dates in `NormalizedCalendarOptions` are stored as `disabledIds: Set<string>`** (YYYY-MM-DD strings), not `Date[]`. Always normalize at the `normalizeGlobalParameters` boundary.
 - When adding new composables, wire them through `useCalendar()` and export from `lib/index.ts`.

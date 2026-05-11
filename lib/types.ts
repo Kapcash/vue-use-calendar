@@ -73,9 +73,46 @@ export interface Week<T = unknown> {
   readonly days: CalendarDay<T>[];
 }
 
+// ── Selection mode ──────────────────────────────────────────────────
+
+export type SelectionMode = 'single' | 'range' | 'multiple';
+
+export interface SingleSelectionHandlers<T = unknown> {
+  selectSingle: (day: CalendarDay<T>) => void;
+}
+
+export interface RangeSelectionHandlers<T = unknown> {
+  selectRange: (day: CalendarDay<T>) => void;
+  hoverRange: (day: CalendarDay<T>) => void;
+  resetHover: () => void;
+}
+
+export interface MultipleSelectionHandlers<T = unknown> {
+  selectMultiple: (day: CalendarDay<T>) => void;
+}
+
+/** Narrows the handlers object to only the methods valid for the given mode.
+ *  When mode is `undefined` (no mode specified), all handlers are exposed. */
+export type ModeHandlers<T, M extends SelectionMode | undefined> =
+  M extends 'single' ? SingleSelectionHandlers<T> :
+  M extends 'range' ? RangeSelectionHandlers<T> :
+  M extends 'multiple' ? MultipleSelectionHandlers<T> :
+  SelectionHandlers<T>;
+
+// ── Selection handlers ──────────────────────────────────────────────
+
+/** All selection handlers. Returned when no mode is specified. */
+export interface SelectionHandlers<T = unknown> {
+  selectSingle: (day: CalendarDay<T>) => void;
+  selectRange: (day: CalendarDay<T>) => void;
+  selectMultiple: (day: CalendarDay<T>) => void;
+  hoverRange: (day: CalendarDay<T>) => void;
+  resetHover: () => void;
+}
+
 // ── Options ─────────────────────────────────────────────────────────
 
-export interface CalendarOptions<T = unknown> {
+export interface CalendarOptions<T = unknown, M extends SelectionMode | undefined = undefined> {
   startOn?: DateInput;
   minDate?: DateInput;
   maxDate?: DateInput;
@@ -84,27 +121,20 @@ export interface CalendarOptions<T = unknown> {
   locale?: Locale;
   preSelection?: Array<Date> | Date;
   meta?: (date: Date) => T;
+  mode?: M;
 }
 
-export interface NormalizedCalendarOptions<T = unknown> {
+export interface NormalizedCalendarOptions<T = unknown, M extends SelectionMode | undefined = undefined> {
   startOn: Date;
   minDate?: Date;
   maxDate?: Date;
-  disabled: Date[];
+  /** Set of "YYYY-MM-DD" day ID strings for O(1) disabled lookup. */
+  disabledIds: Set<string>;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
   preSelection: Date[];
   meta: (date: Date) => T;
-}
-
-// ── Listeners ───────────────────────────────────────────────────────
-
-export interface Listeners<T = unknown> {
-  selectSingle: (day: CalendarDay<T>) => void;
-  selectRange: (day: CalendarDay<T>) => void;
-  selectMultiple: (day: CalendarDay<T>) => void;
-  hoverRange: (day: CalendarDay<T>) => void;
-  resetHover: () => void;
+  mode: M;
 }
 
 // ── Composable return types ─────────────────────────────────────────
@@ -118,21 +148,25 @@ export interface WeeklyOptions {
   infinite?: boolean;
 }
 
-export interface MonthlyCalendarComposable<T = unknown> {
+export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
   currentMonthAndYear: Reactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<T>>;
   months: ComputedRef<Month<T>[]>;
   days: ComputedRef<CalendarDay<T>[]>;
+  pureDays: ComputedRef<CalendarDay<T>[]>;
   selectedDates: ComputedRef<CalendarDay<T>[]>;
   nextMonth: () => void;
   prevMonth: () => void;
   nextMonthEnabled: ComputedRef<boolean>;
   prevMonthEnabled: ComputedRef<boolean>;
-  listeners: Listeners<T>;
+  listeners: ModeHandlers<T, M>;
+  selectDate: (date: Date) => void;
+  clearSelection: () => void;
 }
 
-export interface WeeklyCalendarComposable<T = unknown> {
+export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
   currentWeek: ComputedRef<Week<T>>;
+  currentWeekAndYear: Reactive<{ year: number; weekNumber: number }>;
   weeks: ComputedRef<Week<T>[]>;
   days: ComputedRef<CalendarDay<T>[]>;
   selectedDates: ComputedRef<CalendarDay<T>[]>;
@@ -140,12 +174,14 @@ export interface WeeklyCalendarComposable<T = unknown> {
   prevWeek: () => void;
   nextWeekEnabled: ComputedRef<boolean>;
   prevWeekEnabled: ComputedRef<boolean>;
-  listeners: Listeners<T>;
+  listeners: ModeHandlers<T, M>;
+  selectDate: (date: Date) => void;
+  clearSelection: () => void;
 }
 
-export interface CalendarComposables<T = unknown> {
-  useMonthlyCalendar: (opts?: MonthlyOptions) => MonthlyCalendarComposable<T>;
-  useWeeklyCalendar: (opts?: WeeklyOptions) => WeeklyCalendarComposable<T>;
+export interface CalendarComposables<T = unknown, M extends SelectionMode | undefined = undefined> {
+  useMonthlyCalendar: (opts?: MonthlyOptions) => MonthlyCalendarComposable<T, M>;
+  useWeeklyCalendar: (opts?: WeeklyOptions) => WeeklyCalendarComposable<T, M>;
   useWeekdays: (format?: WeekdayInputFormat) => string[];
   useMonthsList: (opts?: { format?: MonthInputFormat }) => string[];
   useYearsList: (opts?: YearsListOptions) => string[];
@@ -158,4 +194,5 @@ export interface YearsListOptions {
   amount?: number;
 }
 
-export type GeneratorComposable = Array<string>;
+/** Plain string array returned by static generator composables (useWeekdays, useYearsList, etc.). */
+export type StringList = Array<string>;

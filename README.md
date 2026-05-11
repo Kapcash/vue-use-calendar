@@ -109,6 +109,7 @@ const { currentMonth } = useMonthlyCalendar();
 | locale        | date-fns `Locale`                     | true | `undefined` | The locale object for translating weekdays/months.<br>Import like `import { fr } from 'date-fns/locale';`. See [date-fns](https://date-fns.org/docs/Locale) |
 | preSelection  | `Array<Date> \| Date`                 | true | `[]` | A date or array of dates to be preselected on calendar generation |
 | meta          | `(date: Date) => T`                   | true | `undefined` | A function to attach custom metadata to each day. The generic `T` flows through all composable return types. |
+| mode          | `'single' \| 'range' \| 'multiple'`   | true | `undefined` | Constrains which selection handlers are available. When set, the `listeners` type is narrowed to only the methods valid for that mode. |
 
 ### Outputs
 
@@ -134,17 +135,20 @@ const { currentMonth } = useMonthlyCalendar({ infinite: false, fullWeeks: false 
 
 | name | type | optional | default | description |
 |------|------|----------|---------|-------------|
-| infinite  | `boolean` | true | `true` | If true, navigating generates new months on the fly |
+| infinite  | `boolean` | true | `false` | If true, navigating generates new months on the fly |
 | fullWeeks | `boolean` | true | `true` | If true, each month includes padding days from adjacent months to complete each week |
 
 ### Outputs
 
 | name | type | description |
 |------|------|-------------|
-| days | `ComputedRef<CalendarDay<T>[]>` | All days across cached months, excluding `otherMonth` padding. Sorted chronologically without duplicates. |
+| days | `ComputedRef<CalendarDay<T>[]>` | All days across cached months, including `otherMonth` padding. |
+| pureDays | `ComputedRef<CalendarDay<T>[]>` | All days across cached months, excluding `otherMonth` padding. |
 | selectedDates | `ComputedRef<CalendarDay<T>[]>` | Currently selected days. |
-| listeners | `Listeners<T>` | Methods for changing date states (see [Listeners](#listeners)). |
-| currentMonthAndYear | `Reactive<{ month: number; year: number }>` | Reactive object of the current month/year. Can be mutated directly to jump to any month. |
+| listeners | `ModeHandlers<T, M>` | Methods for changing date states (see [Selection Handlers](#selection-handlers)). Narrowed to mode-appropriate methods when `mode` is set. |
+| selectDate | `(date: Date) => void` | Programmatically select a date without needing a `CalendarDay` object. Respects the configured `mode`. |
+| clearSelection | `() => void` | Programmatically clear all selected and hovered dates. |
+| currentMonthAndYear | `Reactive<{ month: number; year: number }>` | Reactive object of the current month/year. Backed by getter/setter — mutating it directly calls `jumpTo()` with no risk of watch loops. |
 | currentMonth | `ComputedRef<Month<T>>` | The current month. Contains `month`, `year`, `id`, and `days` array. |
 | months | `ComputedRef<Month<T>[]>` | All months currently in the cache, sorted chronologically. |
 | nextMonth | `() => void` | Navigate to the next month. |
@@ -172,7 +176,10 @@ const { currentWeek } = useWeeklyCalendar({ infinite: false });
 |------|------|-------------|
 | days | `ComputedRef<CalendarDay<T>[]>` | All days across cached weeks, sorted chronologically. |
 | selectedDates | `ComputedRef<CalendarDay<T>[]>` | Currently selected days. |
-| listeners | `Listeners<T>` | Methods for changing date states (see [Listeners](#listeners)). |
+| listeners | `ModeHandlers<T, M>` | Methods for changing date states (see [Selection Handlers](#selection-handlers)). Narrowed to mode-appropriate methods when `mode` is set. |
+| selectDate | `(date: Date) => void` | Programmatically select a date without needing a `CalendarDay` object. Respects the configured `mode`. |
+| clearSelection | `() => void` | Programmatically clear all selected and hovered dates. |
+| currentWeekAndYear | `Reactive<{ year: number; weekNumber: number }>` | Reactive object of the current week/year. Backed by getter/setter — mutating it directly calls `jumpTo()` with no risk of watch loops. |
 | currentWeek | `ComputedRef<Week<T>>` | The current week. Contains `weekNumber`, `month`, `year`, `id`, and `days` array. |
 | weeks | `ComputedRef<Week<T>[]>` | All weeks currently in the cache, sorted chronologically. |
 | nextWeek | `() => void` | Navigate to the next week. |
@@ -240,9 +247,16 @@ const years = useYearsList({ fromYear: 2020, toYear: 2030 });
 
 Returns `string[]` — the array of year strings.
 
-## Listeners
+## Selection Handlers
 
-The `listeners` object returned by the sub-composables contains the following methods:
+The `listeners` object returned by the sub-composables contains the following methods. When a `mode` is passed to `useCalendar`, the TypeScript type of `listeners` is narrowed — only the methods valid for that mode are exposed:
+
+| mode | exposed methods |
+|------|-----------------|
+| `'single'` | `selectSingle` |
+| `'range'` | `selectRange`, `hoverRange`, `resetHover` |
+| `'multiple'` | `selectMultiple` |
+| _(none)_ | all methods |
 
 ### `selectSingle`
 
@@ -327,6 +341,24 @@ hoverRange(currentMonth.value.days[20]);
 ### `resetHover`
 
 Reset hover state on all dates. Typically bound to `@mouseleave`.
+
+## Programmatic API
+
+### `selectDate(date: Date)`
+
+Select a date programmatically without needing a rendered `CalendarDay` object. Useful for responding to external state (form resets, URL params, etc.). Respects the `mode` and disabled state.
+
+```typescript
+const { useMonthlyCalendar } = useCalendar({ mode: 'single' });
+const { selectDate, clearSelection } = useMonthlyCalendar();
+
+selectDate(new Date(2026, 5, 15));
+clearSelection();
+```
+
+### `clearSelection()`
+
+Clear all selected and hovered dates.
 
 # CalendarDay object
 
@@ -424,11 +456,18 @@ Months and weeks are generated lazily and stored in a reactive cache. When you n
 
 The cache has a configurable maximum size (default 13). When exceeded, the period farthest from the current view is evicted. In finite mode (with `minDate`/`maxDate`), all periods are pre-generated and the cache is sized to hold them all.
 
-You can jump directly to any month by mutating `currentMonthAndYear`:
+You can jump directly to any month by mutating `currentMonthAndYear`. The object uses getter/setter properties backed by the navigation state — no watch loops, no intermediate navigation:
 
 ```typescript
 currentMonthAndYear.month = 2;  // March
 currentMonthAndYear.year = 2027;
+```
+
+For weekly calendars, `currentWeekAndYear` works the same way:
+
+```typescript
+currentWeekAndYear.weekNumber = 3;
+currentWeekAndYear.year = 2027;
 ```
 
 ## Shared state across months

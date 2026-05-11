@@ -79,6 +79,7 @@ const { useMonthlyCalendar, useWeekdays, useMonthsList, useYearsList } = useCale
   firstDayOfWeek,
   locale: enGB,
   preSelection: [addDays(now, 2), addDays(now, 4)],
+  mode: 'range',
 });
 
 const months = useMonthsList();

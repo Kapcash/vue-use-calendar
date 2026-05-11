@@ -18,7 +18,7 @@
           -
         </button>
 
-        {{ currentWeek.month + 1 }} - {{ currentWeek.year }} W:{{ currentWeek.weekNumber + 1 }}
+        {{ currentWeek.month + 1 }} - {{ currentWeek.year }} W:{{ currentWeek.weekNumber }}
 
         <button
           :disabled="!nextWeekEnabled"
@@ -62,6 +62,7 @@ const { useWeeklyCalendar, useWeekdays } = useCalendar({
   firstDayOfWeek,
   locale: enGB,
   preSelection: [addDays(new Date(), 2)],
+  mode: 'single',
 });
 
 const { currentWeek, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar();
