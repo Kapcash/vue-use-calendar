@@ -4,9 +4,9 @@
     Selection: 
     <span 
       v-for="selected of selectedDates"
-      :key="selected.dayId"
+      :key="selected.id"
     >
-      {{ selected.toLocaleDateString() }}
+      {{ selected.date.toLocaleDateString() }}
     </span>
 
     <div class="month">
@@ -36,7 +36,7 @@
       <div class="grid">
         <CalendarCell
           v-for="day of currentWeek.days"
-          :key="day.dayId"
+          :key="day.id"
           :day="day"
           @click="listeners.selectSingle(day)"
         />

@@ -5,9 +5,9 @@
       Selection:
       <span
         v-for="selected of selectedDates"
-        :key="selected.getTime()"
+        :key="selected.date.getTime()"
       >
-        {{ selected.toLocaleDateString() }}
+        {{ selected.date.toLocaleDateString() }}
       </span>
     </div>
 
@@ -53,7 +53,7 @@
       <div class="grid">
         <CalendarCell
           v-for="day of currentMonth.days"
-          :key="day.dayId"
+          :key="day.id"
           :day="day"
           @click="listeners.selectRange(day)"
           @mouseover="listeners.hoverRange(day)"
@@ -85,7 +85,6 @@ const months = useMonthsList();
 const years = useYearsList();
 
 const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true });
-// selectedDates.value.splice(0, selectedDates.value.length, ...[new CalendarDate(2023, 5, 15), addDays(new CalendarDate(2023, 5, 15), 6) as CalendarDate]);
 const weekdays = useWeekdays();
 
 function goToCurrentMonth () {

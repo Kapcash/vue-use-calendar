@@ -7,27 +7,26 @@
     <button
       class="calendar-cell"
       :class="{
-        light: props.day.otherMonth,
-        active: props.day.isSelected.value,
-        hover: props.day.isHovered.value,
-        between: props.day.isBetween.value,
-        today: props.day.isToday,
-        red: props.day._copied,
+        light: day.otherMonth,
+        active: day.state.selected,
+        hover: day.state.hovered,
+        between: day.state.between,
+        today: day.isToday,
       }"
-      :disabled="props.day.disabled.value"
+      :disabled="day.state.disabled"
       @click="$emit('click')"
     > 
-      {{ props.day.getDate() }}
+      {{ day.date.getDate() }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { CalendarDate } from '../../lib/models/CalendarDate';
+import { CalendarDay } from '../../lib/types';
 
 const props = defineProps({
-  day: { type: Object as PropType<CalendarDate>, required: true },
+  day: { type: Object as PropType<CalendarDay>, required: true },
 });
 
 defineEmits({

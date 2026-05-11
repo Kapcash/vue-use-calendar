@@ -8,28 +8,31 @@
       <CalendarCell :day="otherMonthCell" />
       Other month cell
     </label>
-    <label>
-      <CalendarCell :day="otherMonthCellLinked" />
-      Other month cell linked to another cell
-    </label>
   </div>
 </template>
 
 <script setup lang="ts">
-import { startOfMonth, addMonths } from 'date-fns';
+import { startOfMonth, addMonths, startOfDay } from 'date-fns';
 import CalendarCell from './CalendarCell.vue';
-import { generateCalendarFactory } from '../../lib/models/CalendarDate';
+import { createCalendarDay } from '../../lib/core/calendar-day';
+import type { NormalizedCalendarOptions } from '../../lib/types';
 
-const calendarFactory = generateCalendarFactory();
+const defaultOptions: NormalizedCalendarOptions = {
+  startOn: startOfDay(new Date()),
+  disabled: [],
+  firstDayOfWeek: 0,
+  locale: undefined,
+  meta: () => undefined,
+};
+
 const referenceDay = new Date(2022, 4, 15);
-const todayCell = calendarFactory(new Date());
+const todayCell = createCalendarDay(new Date(), defaultOptions);
 
-const otherMonthCell = calendarFactory(startOfMonth(addMonths(referenceDay, 1)));
-otherMonthCell.otherMonth = true;
-
-const otherMonthCellLinked = calendarFactory(otherMonthCell);
-otherMonthCellLinked.otherMonth = true;
-otherMonthCellLinked._copied = true;
+const otherMonthCell = createCalendarDay(
+  startOfMonth(addMonths(referenceDay, 1)),
+  defaultOptions,
+  { otherMonth: true },
+);
 </script>
 
 <style scoped>

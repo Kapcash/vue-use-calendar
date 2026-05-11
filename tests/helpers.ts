@@ -1,9 +1,9 @@
 import { differenceInDays } from 'date-fns';
-import { CalendarDate } from '../lib/models/CalendarDate';
+import { CalendarDay } from '../lib/types';
 
-export function areConsecutiveDays (calendarDates: Array<CalendarDate>): boolean {
-  return calendarDates.every((day, index, all) => {
+export function areConsecutiveDays (calendarDays: Array<CalendarDay>): boolean {
+  return calendarDays.every((day, index, all) => {
     if (!all[index - 1]) { return true; }
-    return differenceInDays(day, all[index - 1]) === 1;
+    return differenceInDays(day.date, all[index - 1].date) === 1;
   });
 }

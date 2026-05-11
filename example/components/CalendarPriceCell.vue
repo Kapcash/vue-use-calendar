@@ -3,21 +3,21 @@
     <button
       class="calendar-cell"
       :class="{
-        light: props.day.otherMonth,
-        active: props.day.isSelected.value,
-        hover: props.day.isHovered.value,
-        between: props.day.isBetween.value,
-        today: props.day.isToday,
+        light: day.otherMonth,
+        active: day.state.selected,
+        hover: day.state.hovered,
+        between: day.state.between,
+        today: day.isToday,
       }"
-      :disabled="props.day.disabled.value"
+      :disabled="day.state.disabled"
       @click="$emit('click')"
     > 
-      <p>{{ props.day.getDate() }}</p>
+      <p>{{ day.date.getDate() }}</p>
       <p
-        v-if="props.day.price"
+        v-if="day.meta?.price"
         class="price"
       >
-        {{ props.day.price }}€
+        {{ day.meta.price }}€
       </p>
     </button>
   </div>
@@ -25,10 +25,11 @@
 
 <script setup lang="ts">
 import { PropType } from 'vue';
-import { CustomDate } from './CustomDate';
+import { CalendarDay } from '../../lib/types';
+import { PriceMeta } from './CustomDate';
 
 const props = defineProps({
-  day: { type: Object as PropType<CustomDate>, required: true },
+  day: { type: Object as PropType<CalendarDay<PriceMeta>>, required: true },
 });
 
 defineEmits({

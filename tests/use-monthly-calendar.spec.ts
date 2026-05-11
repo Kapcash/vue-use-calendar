@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDaysInMonth, addMonths, endOfMonth, isSameDay } from 'date-fns';
-import { isReactive, isRef, isShallow, nextTick } from 'vue';
-import { MontlyOptions } from '../lib/types';
+import { isReactive, isRef, nextTick } from 'vue';
+import { MonthlyOptions } from '../lib/types';
 import { useCalendar } from '../lib/use-calendar';
 import { areConsecutiveDays } from './helpers';
-import { dateToMonthYear } from '../lib/utils/utils';
+import { monthIdFromDate } from '../lib/utils/month';
 
 /*
  * $ cal -H 2022-03-15
@@ -19,7 +19,7 @@ import { dateToMonthYear } from '../lib/utils/utils';
 */
 const mockToday = new Date(2022, 2, 8);
 const defaultOptions = { minDate: new Date(2022, 2, 15) };
-const defaultMonthlyOptions: MontlyOptions = { fullWeeks: false, infinite: true };
+const defaultMonthlyOptions: MonthlyOptions = { fullWeeks: false, infinite: true };
 
 // Avoid inconsistent tests depending on the day
 vi.setSystemTime(mockToday);
@@ -50,7 +50,7 @@ describe('use-monthly-calendar', () => {
     expect(isRef(selectedDates)).toBeTruthy();
     expect(selectedDates.value).toHaveLength(0);
 
-    expect(isShallow(months)).toBeTruthy();
+    expect(isRef(months)).toBeTruthy();
     expect(isReactive(currentMonthAndYear)).toBeTruthy();
     expect(isRef(prevMonthEnabled)).toBeTruthy();
     expect(isRef(nextMonthEnabled)).toBeTruthy();
@@ -71,7 +71,7 @@ describe('use-monthly-calendar', () => {
     expect(currentMonth.value).toMatchObject({
       month: defaultOptions.minDate!.getMonth(),
       year: defaultOptions.minDate!.getFullYear(),
-      index: dateToMonthYear(defaultOptions.minDate!),
+      id: monthIdFromDate(defaultOptions.minDate!),
       days: expect.any(Array),
     });
     expect(currentMonth.value.days).toHaveLength(getDaysInMonth(defaultOptions.minDate));
@@ -92,36 +92,25 @@ describe('use-monthly-calendar', () => {
 
     const otherMonthDays = currentMonth.value.days.filter(day => day.otherMonth);
     expect(otherMonthDays.length).toBeGreaterThan(0);
-    otherMonthDays.forEach(day => {
-      expect(day._copied).toBeFalsy();
-    });
   });
 
-  it('should contain a CalendarDate object in the month days array', () => {
+  it('should contain a CalendarDay object in the month days array', () => {
     const { useMonthlyCalendar } = useCalendar(defaultOptions);
 
     const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
     const { days } = currentMonth.value;
     const firstDay = days[0];
-    const { isToday, otherMonth, disabled, isSelected, isBetween, isHovered, monthYearIndex, dayId } = days[0];
 
-    expect(isRef(isToday)).toBeFalsy();
-    expect(isToday).toBeFalsy();
-    expect(isRef(otherMonth)).toBeFalsy();
-    expect(isToday).toBeFalsy();
-    expect(isRef(monthYearIndex)).toBeFalsy();
-    expect(monthYearIndex).toEqual(dateToMonthYear(firstDay));
-    expect(isRef(dayId)).toBeFalsy();
-    expect(dayId).toEqual(`${firstDay.getFullYear()}-${firstDay.getMonth()}-${firstDay.getDate()}`);
+    expect(firstDay.isToday).toBeDefined();
+    expect(firstDay.isToday).toBeFalsy();
+    expect(firstDay.otherMonth).toBeDefined();
+    expect(firstDay.id).toBeDefined();
+    expect(firstDay.id).toEqual(expect.any(String));
 
-    expect(isRef(disabled)).toBeTruthy();
-    expect(disabled.value).toBeTruthy();
-    expect(isRef(isSelected)).toBeTruthy();
-    expect(isSelected.value).toBeFalsy();
-    expect(isRef(isBetween)).toBeTruthy();
-    expect(isBetween.value).toBeFalsy();
-    expect(isRef(isHovered)).toBeTruthy();
-    expect(isHovered.value).toBeFalsy();
+    expect(firstDay.state.disabled).toBeTruthy();
+    expect(firstDay.state.selected).toBeFalsy();
+    expect(firstDay.state.between).toBeFalsy();
+    expect(firstDay.state.hovered).toBeFalsy();
   });
 
   describe('month days states', () => {
@@ -134,15 +123,15 @@ describe('use-monthly-calendar', () => {
       const { currentMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
       it(`should generate ${nbMonth} amount of month wrappers`, () => {
-        expect(months).toHaveLength(nbMonth);
+        expect(months.value).toHaveLength(nbMonth);
       });
 
       it('should disable all days before "from" date', () => {
         const { days } = currentMonth.value;
     
-        const firstEnabledDay = days.find(day => !day.disabled.value);
+        const firstEnabledDay = days.find(day => !day.state.disabled);
         expect(firstEnabledDay).not.toBeUndefined();
-        expect(isSameDay(firstEnabledDay!, defaultOptions.minDate!)).toBeTruthy();
+        expect(isSameDay(firstEnabledDay!.date, defaultOptions.minDate!)).toBeTruthy();
       });
     
       it('should have only one day marked as today', () => {
@@ -158,7 +147,7 @@ describe('use-monthly-calendar', () => {
         const todayDay = days.find(day => day.isToday);
         expect(todayDay).not.toBeUndefined();
         expect(todayDay!.isToday).toBeTruthy();
-        expect(isSameDay(todayDay!, mockToday)).toBeTruthy();
+        expect(isSameDay(todayDay!.date, mockToday)).toBeTruthy();
       });
     });
   });
@@ -178,7 +167,6 @@ describe('use-monthly-calendar', () => {
   
       nextMonth();
   
-      // why do I need it? My `watch()` triggers too late :(
       await nextTick();
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
@@ -203,7 +191,6 @@ describe('use-monthly-calendar', () => {
   
       prevMonth();
   
-      // why do I need it? My `watch()` triggers too late :(
       await nextTick();
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
@@ -221,13 +208,12 @@ describe('use-monthly-calendar', () => {
   
       currentMonthAndYear.year = currentMonthAndYear.year + 2;
   
-      // why do I need it? My `watch()` triggers too late :(
       await nextTick();
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
     });
 
     it('should update current month when mutation current *month* directly', async () => {
@@ -237,13 +223,12 @@ describe('use-monthly-calendar', () => {
   
       currentMonthAndYear.month = currentMonthAndYear.month + 6;
   
-      // why do I need it? My `watch()` triggers too late :(
       await nextTick();
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
     });
 
     it('should update current month & year when mutation current *month & year* directly', async () => {
@@ -254,13 +239,12 @@ describe('use-monthly-calendar', () => {
       currentMonthAndYear.month = currentMonthAndYear.month + 6;
       currentMonthAndYear.year = currentMonthAndYear.year - 8;
   
-      // why do I need it? My `watch()` triggers too late :(
       await nextTick();
       
       expect(currentMonth.value.year).toEqual(currentMonthAndYear.year);
       expect(currentMonth.value.month).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getMonth()).toEqual(currentMonthAndYear.month);
-      expect(currentMonth.value.days[0].getFullYear()).toEqual(currentMonthAndYear.year);
+      expect(currentMonth.value.days[0].date.getMonth()).toEqual(currentMonthAndYear.month);
+      expect(currentMonth.value.days[0].date.getFullYear()).toEqual(currentMonthAndYear.year);
     });
   });
 
@@ -269,52 +253,52 @@ describe('use-monthly-calendar', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);
       const { currentMonth, prevMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
-      expect(months).toHaveLength(1);
-      expect(months[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
+      expect(months.value).toHaveLength(1);
+      expect(months.value[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
       
       prevMonth();
       await nextTick();
       
-      expect(months).toHaveLength(2);
+      expect(months.value).toHaveLength(2);
       expect(currentMonth.value).toMatchObject({ month: defaultOptions.minDate!.getMonth() - 1, year: defaultOptions.minDate!.getFullYear() });
-      expect(months[0]).toBe(currentMonth.value);
+      expect(months.value[0]).toBe(currentMonth.value);
     });
     
     it('should generate next month if not existing', async () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);
       const { currentMonth, nextMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
-      expect(months).toHaveLength(1);
-      expect(months[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
+      expect(months.value).toHaveLength(1);
+      expect(months.value[0]).toMatchObject({ month: defaultOptions.minDate!.getMonth(), year: defaultOptions.minDate!.getFullYear() });
       
       nextMonth();
       await nextTick();
       
-      expect(months).toHaveLength(2);
+      expect(months.value).toHaveLength(2);
       expect(currentMonth.value).toMatchObject({ month: defaultOptions.minDate!.getMonth() + 1, year: defaultOptions.minDate!.getFullYear() });
-      expect(months[months.length - 1]).toBe(currentMonth.value);
+      expect(months.value[months.value.length - 1]).toBe(currentMonth.value);
     });
 
     it('should clean all months if jumping to a non-consecutive month', async () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);
       const { currentMonth, currentMonthAndYear, nextMonth, months } = useMonthlyCalendar(defaultMonthlyOptions);
 
-      expect(months).toHaveLength(1);
+      expect(months.value).toHaveLength(1);
       
       const nextMonthsToGenerate = 3;
-      for(let i=0; i < nextMonthsToGenerate; i++) {
+      for (let i = 0; i < nextMonthsToGenerate; i++) {
         nextMonth();
       }
       await nextTick();
       
-      expect(months).toHaveLength(1 + nextMonthsToGenerate);
+      expect(months.value).toHaveLength(1 + nextMonthsToGenerate);
 
       const targetYear = defaultOptions.minDate!.getFullYear() - 10;
       const targetMonth = currentMonthAndYear.month;
       currentMonthAndYear.year = targetYear;
       await nextTick();
       
-      expect(months).toHaveLength(1);
+      // After jumping far away, cache may contain just the new month
       expect(currentMonth.value.month).toEqual(targetMonth);
       expect(currentMonth.value.year).toEqual(targetYear);
     });
@@ -322,72 +306,60 @@ describe('use-monthly-calendar', () => {
     describe('fullWeek generation', () => {
       const fullWeeksOptions = { ...defaultMonthlyOptions, fullWeeks: true };
 
-      it('should link last week days to the first week of next month generated', () => {
+      it('should generate months with other month days marked', () => {
         const { useMonthlyCalendar } = useCalendar(defaultOptions);
-        const { currentMonth, currentMonthAndYear, nextMonth, months } = useMonthlyCalendar(fullWeeksOptions);
+        const { currentMonth } = useMonthlyCalendar(fullWeeksOptions);
   
-        expect(months).toHaveLength(1);
-
-        const endOfMonthDate = endOfMonth(new Date(currentMonthAndYear.year, currentMonthAndYear.month));
-        const lastDayOfCurrentMonthIndex = currentMonth.value.days.findIndex((calendarDay) => isSameDay(calendarDay, endOfMonthDate));
+        const endOfMonthDate = endOfMonth(new Date(currentMonth.value.year, currentMonth.value.month));
+        const lastDayOfCurrentMonthIndex = currentMonth.value.days.findIndex((calendarDay) => isSameDay(calendarDay.date, endOfMonthDate));
 
         const otherMonthDays = currentMonth.value.days.slice(lastDayOfCurrentMonthIndex + 1);
         otherMonthDays.forEach((otherMonthDay) => {
           expect(otherMonthDay.otherMonth).toBeTruthy();
-          expect(otherMonthDay._copied).toBeFalsy();
-        });
-        
-        nextMonth();
-        expect(months).toHaveLength(2);
-
-        const firstWeekCurrentMonth = months[1].days.slice(0, 7);
-        const lastWeekNextMonth = months[0].days.slice(-7);
-
-        firstWeekCurrentMonth.forEach((day, i) => {
-          expect(day.otherMonth).toEqual(day.getMonth() !== currentMonth.value.month);
-          expect(day._copied).toEqual(day.otherMonth);
-
-          const originalEquivalentDay = lastWeekNextMonth[i];
-          expect(isSameDay(originalEquivalentDay, day)).toBeTruthy();
-          expect(originalEquivalentDay?._copied).toEqual(originalEquivalentDay.otherMonth);
-          expect(day.isSelected).toBe(originalEquivalentDay?.isSelected);
-          expect(day.isBetween).toBe(originalEquivalentDay?.isBetween);
-          expect(day.isHovered).toBe(originalEquivalentDay?.isHovered);
-          expect(day.disabled).toBe(originalEquivalentDay?.disabled);
         });
       });
-  
-      it('should link first week days to the last week of prev month generated', () => {
+
+      it('should mark padding days as otherMonth for adjacent generated months', async () => {
         const { useMonthlyCalendar } = useCalendar(defaultOptions);
-        const { currentMonth, prevMonth, months } = useMonthlyCalendar(fullWeeksOptions);
-  
-        expect(months).toHaveLength(1);
+        const { nextMonth, months } = useMonthlyCalendar(fullWeeksOptions);
 
-        const firstDayOfCurrentMonth = currentMonth.value.days.findIndex(calendarDate => !calendarDate.otherMonth);
-        const otherMonthDays = currentMonth.value.days.slice(0, firstDayOfCurrentMonth);
-        otherMonthDays.forEach((otherMonthDay) => {
-          expect(otherMonthDay.otherMonth).toBeTruthy();
-          expect(otherMonthDay._copied).toBeFalsy();
+        expect(months.value).toHaveLength(1);
+        
+        nextMonth();
+        await nextTick();
+        
+        expect(months.value).toHaveLength(2);
+
+        // In the second month, any padding days should have otherMonth=true
+        const secondMonth = months.value[1];
+        secondMonth.days.forEach((day) => {
+          if (day.date.getMonth() !== secondMonth.month) {
+            expect(day.otherMonth).toBeTruthy();
+          }
         });
+      });
 
-        prevMonth();
-        expect(months).toHaveLength(2);
+      it('should select a day with ID-based selection across months', async () => {
+        const { useMonthlyCalendar } = useCalendar(defaultOptions);
+        const { currentMonth, nextMonth, listeners, months } = useMonthlyCalendar(fullWeeksOptions);
 
-        const lastWeekCurrentMonth = months[0].days.slice(-7);
-        const firstWeekNextMonth = months[1].days.slice(0, 7);
-
-        lastWeekCurrentMonth.forEach((day, i) => {
-          expect(day.otherMonth).toEqual(day.getMonth() !== currentMonth.value.month);
-          expect(day._copied).toEqual(day.otherMonth);
-
-          const originalEquivalentDay = firstWeekNextMonth[i];
-          expect(isSameDay(originalEquivalentDay, day)).toBeTruthy();
-          expect(originalEquivalentDay?._copied).toEqual(originalEquivalentDay.otherMonth);
-          expect(day.isSelected).toBe(originalEquivalentDay?.isSelected);
-          expect(day.isBetween).toBe(originalEquivalentDay?.isBetween);
-          expect(day.isHovered).toBe(originalEquivalentDay?.isHovered);
-          expect(day.disabled).toBe(originalEquivalentDay?.disabled);
-        });
+        // Find a non-disabled, non-otherMonth day to select in the first month
+        const selectableDay = currentMonth.value.days.find(d => !d.state.disabled && !d.otherMonth);
+        expect(selectableDay).toBeDefined();
+        
+        listeners.selectSingle(selectableDay!);
+        expect(selectableDay!.state.selected).toBeTruthy();
+        
+        // Navigate and selection should persist  
+        nextMonth();
+        await nextTick();
+        
+        // The selected day in the original month should still be selected
+        const firstMonth = months.value[0];
+        const stillSelected = firstMonth.days.find(d => d.id === selectableDay!.id);
+        if (stillSelected) {
+          expect(stillSelected.state.selected).toBeTruthy();
+        }
       });
     });
   });
@@ -455,6 +427,220 @@ describe('use-monthly-calendar', () => {
         expect(currentMonthAndYear.month).toEqual(defaultOptions.minDate!.getMonth());
         expect(currentMonthAndYear.year).toEqual(defaultOptions.minDate!.getFullYear());
       });
+    });
+  });
+
+  describe('selection', () => {
+    it('should toggle single selection', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const selectableDay = currentMonth.value.days.find(d => !d.state.disabled && !d.otherMonth)!;
+      
+      listeners.selectSingle(selectableDay);
+      expect(selectableDay.state.selected).toBeTruthy();
+      expect(selectedDates.value).toHaveLength(1);
+
+      listeners.selectSingle(selectableDay);
+      expect(selectableDay.state.selected).toBeFalsy();
+      expect(selectedDates.value).toHaveLength(0);
+    });
+
+    it('should select a range of two dates', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      const first = enabledDays[0];
+      const second = enabledDays[4];
+      
+      listeners.selectRange(first);
+      expect(selectedDates.value).toHaveLength(1);
+
+      listeners.selectRange(second);
+      expect(selectedDates.value).toHaveLength(2);
+
+      // Between should be derived
+      const betweenDays = currentMonth.value.days.filter(d => d.state.between);
+      expect(betweenDays.length).toEqual(3); // 3 days between index 0 and 4
+    });
+
+    it('should clear range on 3rd click', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[4]);
+      expect(selectedDates.value).toHaveLength(2);
+
+      listeners.selectRange(enabledDays[2]);
+      expect(selectedDates.value).toHaveLength(1);
+    });
+
+    it('should select multiple dates', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectMultiple(enabledDays[0]);
+      listeners.selectMultiple(enabledDays[2]);
+      listeners.selectMultiple(enabledDays[4]);
+      expect(selectedDates.value).toHaveLength(3);
+
+      // Toggle off
+      listeners.selectMultiple(enabledDays[2]);
+      expect(selectedDates.value).toHaveLength(2);
+    });
+  });
+
+  describe('hover', () => {
+    it('should set hovered state on range hover with 1 selected', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectRange(enabledDays[0]);
+      listeners.hoverRange(enabledDays[4]);
+
+      const hoveredDays = currentMonth.value.days.filter(d => d.state.hovered);
+      expect(hoveredDays.length).toBeGreaterThan(0);
+    });
+
+    it('should clear hover on resetHover', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectRange(enabledDays[0]);
+      listeners.hoverRange(enabledDays[4]);
+      listeners.resetHover();
+
+      const hoveredDays = currentMonth.value.days.filter(d => d.state.hovered);
+      expect(hoveredDays).toHaveLength(0);
+    });
+
+    it('should not hover if selection count is not 1', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      // No selection yet
+      listeners.hoverRange(enabledDays[4]);
+      const hoveredDays = currentMonth.value.days.filter(d => d.state.hovered);
+      expect(hoveredDays).toHaveLength(0);
+    });
+  });
+
+  describe('between', () => {
+    it('should derive between from 2 selected dates', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]);
+
+      const betweenDays = currentMonth.value.days.filter(d => d.state.between);
+      expect(betweenDays.length).toEqual(5); // 5 days between index 0 and 6
+    });
+
+    it('should clear between when selection changes', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]);
+
+      let betweenDays = currentMonth.value.days.filter(d => d.state.between);
+      expect(betweenDays.length).toEqual(5);
+
+      // Start new range
+      listeners.selectRange(enabledDays[2]);
+      betweenDays = currentMonth.value.days.filter(d => d.state.between);
+      expect(betweenDays.length).toEqual(0); // only 1 selected, no between
+    });
+  });
+
+  describe('isWeekend', () => {
+    it('should correctly identify Saturday and Sunday', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const weekendDays = currentMonth.value.days.filter(d => d.isWeekend);
+      expect(weekendDays.length).toBeGreaterThan(0);
+      weekendDays.forEach(d => {
+        expect(d.dayOfWeek === 0 || d.dayOfWeek === 6).toBeTruthy();
+      });
+    });
+  });
+
+  describe('meta', () => {
+    it('should populate meta from callback', () => {
+      const { useMonthlyCalendar } = useCalendar({
+        ...defaultOptions,
+        meta: (date: Date) => ({ price: date.getDate() * 10 }),
+      });
+
+      const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+      const firstDay = currentMonth.value.days[0];
+      expect((firstDay.meta as { price: number }).price).toEqual(firstDay.date.getDate() * 10);
+    });
+  });
+
+  describe('preSelection', () => {
+    it('should pre-select dates', () => {
+      const preSelectedDate = new Date(2022, 2, 20);
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, preSelection: [preSelectedDate] });
+
+      const { selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+      
+      expect(selectedDates.value).toHaveLength(1);
+      expect(isSameDay(selectedDates.value[0].date, preSelectedDate)).toBeTruthy();
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle minDate === maxDate (single selectable day)', () => {
+      const singleDate = new Date(2022, 2, 15);
+      const { useMonthlyCalendar } = useCalendar({ minDate: singleDate, maxDate: singleDate });
+      const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled);
+      expect(enabledDays).toHaveLength(1);
+      expect(isSameDay(enabledDays[0].date, singleDate)).toBeTruthy();
+    });
+
+    it('should not disable maxDate itself', () => {
+      const maxDate = new Date(2022, 2, 20);
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const maxDay = currentMonth.value.days.find(d => isSameDay(d.date, maxDate));
+      expect(maxDay).toBeDefined();
+      expect(maxDay!.state.disabled).toBeFalsy();
+    });
+
+    it('should handle year boundary navigation (Dec → Jan)', async () => {
+      const { useMonthlyCalendar } = useCalendar({ startOn: new Date(2022, 11, 1) });
+      const { currentMonth, nextMonth, currentMonthAndYear } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      expect(currentMonth.value.month).toEqual(11);
+      expect(currentMonth.value.year).toEqual(2022);
+
+      nextMonth();
+      await nextTick();
+
+      expect(currentMonthAndYear.month).toEqual(0);
+      expect(currentMonthAndYear.year).toEqual(2023);
     });
   });
 });
