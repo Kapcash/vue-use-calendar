@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef } from "vue";
+import { ComputedRef, MaybeRefOrGetter } from "vue";
 import type { UnwrapNestedRefs } from "vue";
 
 type Reactive<T> = UnwrapNestedRefs<T>;
@@ -113,13 +113,13 @@ export interface SelectionHandlers<T = unknown> {
 // ── Options ─────────────────────────────────────────────────────────
 
 export interface CalendarOptions<T = unknown, M extends SelectionMode | undefined = undefined> {
-  startOn?: DateInput;
-  minDate?: DateInput;
-  maxDate?: DateInput;
-  disabled?: Array<DateInput>;
-  firstDayOfWeek?: FirstDayOfWeek;
-  locale?: Locale;
-  preSelection?: Array<Date> | Date;
+  startOn?: MaybeRefOrGetter<DateInput>;
+  minDate?: MaybeRefOrGetter<DateInput>;
+  maxDate?: MaybeRefOrGetter<DateInput>;
+  disabled?: MaybeRefOrGetter<Array<DateInput>>;
+  firstDayOfWeek?: MaybeRefOrGetter<FirstDayOfWeek>;
+  locale?: MaybeRefOrGetter<Locale>;
+  preSelection?: MaybeRefOrGetter<Array<Date> | Date>;
   meta?: (date: Date) => T;
   mode?: M;
 }
@@ -182,16 +182,16 @@ export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode |
 export interface CalendarComposables<T = unknown, M extends SelectionMode | undefined = undefined> {
   useMonthlyCalendar: (opts?: MonthlyOptions) => MonthlyCalendarComposable<T, M>;
   useWeeklyCalendar: (opts?: WeeklyOptions) => WeeklyCalendarComposable<T, M>;
-  useWeekdays: (format?: WeekdayInputFormat) => string[];
-  useMonthsList: (opts?: { format?: MonthInputFormat }) => string[];
-  useYearsList: (opts?: YearsListOptions) => string[];
+  useWeekdays: (format?: MaybeRefOrGetter<WeekdayInputFormat>) => ComputedRef<string[]>;
+  useMonthsList: (opts?: { format?: MaybeRefOrGetter<MonthInputFormat> }) => ComputedRef<string[]>;
+  useYearsList: (opts?: YearsListOptions) => ComputedRef<string[]>;
 }
 
 export interface YearsListOptions {
-  format?: YearInputFormat;
-  fromYear?: number;
-  toYear?: number;
-  amount?: number;
+  format?: MaybeRefOrGetter<YearInputFormat>;
+  fromYear?: MaybeRefOrGetter<number>;
+  toYear?: MaybeRefOrGetter<number>;
+  amount?: MaybeRefOrGetter<number>;
 }
 
 /** Plain string array returned by static generator composables (useWeekdays, useYearsList, etc.). */
