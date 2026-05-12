@@ -24,7 +24,10 @@
     "dev:example": "vite example",
     "build:example": "vite build example",
     "start:example": "vite preview example",
-    "deploy:example": "push-dir --dir=example/dist --branch=gh-pages --cleanup"
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "deploy:docs": "vitepress build docs && push-dir --dir=docs/.vitepress/dist --branch=gh-pages --cleanup"
   },
   "repository": {
     "type": "git",
@@ -41,6 +44,7 @@
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
+    "vitepress": "^1.6.4",
     "vitest": "^3.0.0",
     "vue": "^3.5.0"
   },
