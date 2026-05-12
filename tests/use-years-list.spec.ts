@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { enUS } from 'date-fns/locale';
+import { ref } from 'vue';
+import { YearInputFormat } from '../lib/types';
 import { useCalendar } from '../lib';
 
 describe('useYearsList', () => {
@@ -13,7 +15,7 @@ describe('useYearsList', () => {
     const { useYearsList } = useCalendar({ locale });
     const yearsList = useYearsList();
 
-    expect(yearsList).toEqual(
+    expect(yearsList.value).toEqual(
       ["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"],
     );
   });
@@ -22,7 +24,7 @@ describe('useYearsList', () => {
     const { useYearsList } = useCalendar({ locale });
     const yearsList = useYearsList({ format: 'yy' });
 
-    expect(yearsList).toEqual(
+    expect(yearsList.value).toEqual(
       ["23","24","25","26","27","28","29","30","31","32", "33"],
     );
   });
@@ -32,7 +34,7 @@ describe('useYearsList', () => {
     const fromYear = 2000;
     const toYear = 2009;
     const yearsList = useYearsList({ fromYear, toYear });
-    expect(yearsList).toEqual(
+    expect(yearsList.value).toEqual(
       ["2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009"],
     );
   });
@@ -44,7 +46,7 @@ describe('useYearsList', () => {
     const yearsList = useYearsList({ fromYear, toYear });
     const expectedYears = ['2020', '2021'];
 
-    expect(yearsList).toEqual(expectedYears);
+    expect(yearsList.value).toEqual(expectedYears);
   });
 
   it('should handle an empty range', () => {
@@ -53,7 +55,7 @@ describe('useYearsList', () => {
     const toYear = 2020;
 
     const yearsList = useYearsList({ fromYear, toYear });
-    expect(yearsList).toEqual(["2020"]);
+    expect(yearsList.value).toEqual(["2020"]);
   });
 
   it('should handle reversed bounds', () => {
@@ -62,7 +64,7 @@ describe('useYearsList', () => {
     const toYear = 2025;
 
     const yearsList = useYearsList({ fromYear, toYear });
-    expect(yearsList).toEqual(["2025", "2026", "2027", "2028", "2029", "2030"]);
+    expect(yearsList.value).toEqual(["2025", "2026", "2027", "2028", "2029", "2030"]);
   });
 
   it('should generate the given amount of years', () => {
@@ -71,8 +73,8 @@ describe('useYearsList', () => {
     const amount = 4;
 
     const yearsList = useYearsList({ fromYear, amount });
-    expect(yearsList).toEqual(["2025", "2026", "2027", "2028"]);
-    expect(yearsList).toHaveLength(amount);
+    expect(yearsList.value).toEqual(["2025", "2026", "2027", "2028"]);
+    expect(yearsList.value).toHaveLength(amount);
   });
 
   it('should discard the amount of years if the target year is given', () => {
@@ -82,15 +84,74 @@ describe('useYearsList', () => {
     const amount = 4;
 
     const yearsList = useYearsList({ fromYear, toYear, amount });
-    expect(yearsList).toEqual(["2023", "2024", "2025", "2026", "2027", "2028"]);
+    expect(yearsList.value).toEqual(["2023", "2024", "2025", "2026", "2027", "2028"]);
   });
 
   it('should generate a list of years with default format', () => {
     const { useYearsList } = useCalendar({ locale });
     const yearsList = useYearsList({ fromYear: 2020, toYear: 2025 });
 
-    expect(yearsList).toEqual(
+    expect(yearsList.value).toEqual(
       ["2020", "2021", "2022", "2023", "2024", "2025"],
     );
+  });
+
+  describe('reactivity', () => {
+    it('should update when fromYear ref changes', () => {
+      const { useYearsList } = useCalendar({ locale });
+      const fromYear = ref(2020);
+      const yearsList = useYearsList({ fromYear, toYear: 2022 });
+
+      expect(yearsList.value[0]).toEqual('2020');
+
+      fromYear.value = 2021;
+      expect(yearsList.value[0]).toEqual('2021');
+      expect(yearsList.value).toHaveLength(2); // 2021–2022
+    });
+
+    it('should update when toYear ref changes', () => {
+      const { useYearsList } = useCalendar({ locale });
+      const toYear = ref(2025);
+      const yearsList = useYearsList({ fromYear: 2023, toYear });
+
+      expect(yearsList.value).toHaveLength(3); // 2023–2025
+
+      toYear.value = 2027;
+      expect(yearsList.value).toHaveLength(5); // 2023–2027
+      expect(yearsList.value[4]).toEqual('2027');
+    });
+
+    it('should update when format ref changes', () => {
+      const { useYearsList } = useCalendar({ locale });
+      const format = ref<YearInputFormat>('yyyy');
+      const yearsList = useYearsList({ fromYear: 2020, toYear: 2021, format });
+
+      expect(yearsList.value).toEqual(['2020', '2021']);
+
+      format.value = 'yy';
+      expect(yearsList.value).toEqual(['20', '21']);
+    });
+
+    it('should update when amount ref changes', () => {
+      const { useYearsList } = useCalendar({ locale });
+      const amount = ref(3);
+      const yearsList = useYearsList({ fromYear: 2020, amount });
+
+      expect(yearsList.value).toHaveLength(3);
+
+      amount.value = 5;
+      expect(yearsList.value).toHaveLength(5);
+    });
+
+    it('should work with getter functions', () => {
+      const { useYearsList } = useCalendar({ locale });
+      const yearsList = useYearsList({
+        fromYear: () => 2030,
+        toYear: () => 2032,
+        format: () => 'yy' as YearInputFormat,
+      });
+
+      expect(yearsList.value).toEqual(['30', '31', '32']);
+    });
   });
 });

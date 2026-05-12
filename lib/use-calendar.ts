@@ -5,9 +5,10 @@ import { weeklyCalendar } from "./composables/use-weekly-calendar";
 import { useMonthsList } from './composables/use-months-list';
 import { useYearsList } from './composables/use-years-list';
 import { startOfDay } from 'date-fns';
+import { toValue } from 'vue';
 import { dayIdFromDate } from './utils/date';
 
-export function useCalendar<T = unknown, M extends SelectionMode | undefined = undefined>(rawOptions: CalendarOptions<T, M>): CalendarComposables<T, M> {
+export function useCalendar<T = unknown, M extends SelectionMode | undefined = undefined>(rawOptions?: CalendarOptions<T, M>): CalendarComposables<T, M> {
   const options = normalizeGlobalParameters<T, M>(rawOptions);
 
   return {
@@ -19,19 +20,49 @@ export function useCalendar<T = unknown, M extends SelectionMode | undefined = u
   };
 }
 
-export function normalizeGlobalParameters<T, M extends SelectionMode | undefined = undefined>(opts: CalendarOptions<T, M>): NormalizedCalendarOptions<T, M> {
-  const minDate: Date | undefined = opts.minDate ? startOfDay(new Date(opts.minDate)) : undefined;
-  const maxDate: Date | undefined = opts.maxDate ? startOfDay(new Date(opts.maxDate)) : undefined;
-  const startOn: Date = opts.startOn ? startOfDay(new Date(opts.startOn)) : (minDate || startOfDay(new Date()));
-  const disabledIds: Set<string> = new Set(
-    opts.disabled?.map(dis => dayIdFromDate(startOfDay(new Date(dis)))) ?? [],
-  );
-  const firstDayOfWeek: FirstDayOfWeek = opts.firstDayOfWeek || 0;
-  const meta = opts.meta ?? ((() => undefined) as unknown as (date: Date) => T);
-  const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection])
-    .filter(d => d != null)
-    .map(d => startOfDay(d));
-  const mode = (opts.mode ?? undefined) as M;
-
-  return { startOn, firstDayOfWeek, minDate, maxDate, disabledIds, preSelection, meta, locale: opts.locale, mode };
+/** Normalize user input options:
+ * - add default values
+ * - normalize the multiple types into one type
+ * - skip non valid options
+ * - each property is a getter so refs / getters passed as option values stay reactive
+ */
+export function normalizeGlobalParameters<T, M extends SelectionMode | undefined = undefined>(opts: CalendarOptions<T, M> = {}): NormalizedCalendarOptions<T, M> {
+  return {
+    get startOn(): Date {
+      const minDate = toValue(opts.minDate) ? startOfDay(new Date(toValue(opts.minDate)!)) : undefined;
+      const startOnVal = toValue(opts.startOn);
+      return startOnVal ? startOfDay(new Date(startOnVal)) : (minDate || startOfDay(new Date()));
+    },
+    get minDate(): Date | undefined {
+      const v = toValue(opts.minDate);
+      return v ? startOfDay(new Date(v)) : undefined;
+    },
+    get maxDate(): Date | undefined {
+      const v = toValue(opts.maxDate);
+      return v ? startOfDay(new Date(v)) : undefined;
+    },
+    get disabledIds(): Set<string> {
+      return new Set(
+        toValue(opts.disabled)?.map(dis => dayIdFromDate(startOfDay(new Date(dis)))) ?? [],
+      );
+    },
+    get firstDayOfWeek(): FirstDayOfWeek {
+      return toValue(opts.firstDayOfWeek) || 0;
+    },
+    get locale() {
+      return toValue(opts.locale);
+    },
+    get preSelection(): Date[] {
+      const ps = toValue(opts.preSelection);
+      return (Array.isArray(ps) ? ps : [ps])
+        .filter(d => d != null)
+        .map(d => startOfDay(d));
+    },
+    get meta(): (date: Date) => T {
+      return opts.meta ?? ((() => undefined) as unknown as (date: Date) => T);
+    },
+    get mode(): M {
+      return opts.mode as M;
+    },
+  };
 }

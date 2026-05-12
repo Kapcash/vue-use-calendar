@@ -1,4 +1,4 @@
-import { computed, shallowReactive, ref, ComputedRef } from "vue";
+import { computed, shallowReactive, ref, toValue, ComputedRef, MaybeRefOrGetter } from "vue";
 
 /**
  * Generic period navigation with a lazy Map-based cache.
@@ -15,7 +15,7 @@ import { computed, shallowReactive, ref, ComputedRef } from "vue";
 export function createNavigation<TId extends number, TPeriod>(
   startId: TId,
   generatePeriod: (id: TId) => TPeriod,
-  infinite: boolean,
+  infinite: MaybeRefOrGetter<boolean>,
   minId?: TId,
   maxId?: TId,
   nextId?: (id: TId) => TId,
@@ -75,27 +75,27 @@ export function createNavigation<TId extends number, TPeriod>(
   });
 
   const nextEnabled = computed(() => {
-    if (infinite) { return true; }
+    if (toValue(infinite)) { return true; }
     if (maxId === undefined) { return false; }
     return _nextId(currentPeriodId.value) <= maxId;
   });
 
   const prevEnabled = computed(() => {
-    if (infinite) { return true; }
+    if (toValue(infinite)) { return true; }
     if (minId === undefined) { return false; }
     return _prevId(currentPeriodId.value) >= minId;
   });
 
   function next() {
     const nid = _nextId(currentPeriodId.value);
-    if (!infinite && maxId !== undefined && nid > maxId) { return; }
+    if (!toValue(infinite) && maxId !== undefined && nid > maxId) { return; }
     ensureCached(nid);
     currentPeriodId.value = nid;
   }
 
   function prev() {
     const pid = _prevId(currentPeriodId.value);
-    if (!infinite && minId !== undefined && pid < minId) { return; }
+    if (!toValue(infinite) && minId !== undefined && pid < minId) { return; }
     ensureCached(pid);
     currentPeriodId.value = pid;
   }
@@ -103,6 +103,12 @@ export function createNavigation<TId extends number, TPeriod>(
   function jumpTo(id: TId) {
     ensureCached(id);
     currentPeriodId.value = id;
+  }
+
+  /** Clear the entire cache and re-seed only the current period. */
+  function resetCache() {
+    periodCache.clear();
+    periodCache.set(currentPeriodId.value, generatePeriod(currentPeriodId.value));
   }
 
   /** Get all cached periods, sorted by ID. */
@@ -123,5 +129,6 @@ export function createNavigation<TId extends number, TPeriod>(
     prev,
     jumpTo,
     ensureCached,
+    resetCache,
   };
 }
