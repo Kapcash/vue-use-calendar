@@ -1,13 +1,14 @@
 <template>
-  <div class="wrap">
+  <div class="cell-wrap">
     <button
-      class="calendar-cell"
+      class="cell"
       :class="{
-        light: day.otherMonth,
-        active: day.state.selected,
-        hover: day.state.hovered,
-        between: day.state.between,
-        today: day.isToday,
+        'cell--other-month': day.otherMonth,
+        'cell--selected': day.state.selected,
+        'cell--hovered': day.state.hovered,
+        'cell--between': day.state.between,
+        'cell--today': day.isToday,
+        'cell--has-price': day.meta?.price,
       }"
       :disabled="day.state.disabled"
       @click="$emit('click')"
@@ -15,7 +16,7 @@
       <p>{{ day.date.getDate() }}</p>
       <p
         v-if="day.meta?.price"
-        class="price"
+        class="price-tag"
       >
         {{ day.meta.price }}€
       </p>
@@ -39,47 +40,93 @@ defineEmits({
 
 <style scoped>
 p {
-  margin: 0
+  margin: 0;
 }
-.price {
-  color: goldenrod;
+
+.price-tag {
+  font-size: 0.6rem;
+  color: #d97706;
+  font-weight: 600;
 }
-.wrap {
-  padding: 4px;
+
+.cell-wrap {
+  padding: 1px;
 }
-button {
-  border: 1px solid lightgray;
-  border-radius: 5px;
-  width: 50px;
-  height: 50px;
-  background-color: hsl(0, 0%, 95%);
-}
-button:not(:disabled):hover {
+
+.cell {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #1e293b;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  background-color: hsl(0, 0%, 98%);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
 }
-button.today {
-  background-color: rgb(255, 200, 237);
+
+.cell:not(:disabled):hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  cursor: pointer;
 }
-button.light {
-  background-color: lightgoldenrodyellow;
+
+.cell--other-month {
+  color: #cbd5e1;
 }
-button:not(:disabled).hover {
-  background-color: hsl(157, 75%, 78%);
+
+.cell--today {
+  border-color: #6366f1;
+  color: #6366f1;
+  font-weight: 700;
 }
-button.hover:not(:disabled):hover {
-  background-color: hsl(157, 47%, 66%);
+
+.cell:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
-button:not(:disabled).between {
-  background-color: hsl(36, 75%, 78%);
+
+.cell--hovered:not(:disabled) {
+  background: #ddd6fe;
+  border-color: #a78bfa;
 }
-button.between:not(:disabled):hover {
-  background-color: hsl(36, 47%, 66%);
+
+.cell--between:not(:disabled) {
+  background: #ede9fe;
+  border-radius: 0;
 }
-button.active {
-  background-color: hsl(248, 53%, 58%) !important;
+
+.cell--between:not(:disabled):hover {
+  background: #ddd6fe;
 }
-button.active:hover {
-  background-color: hsl(248, 73%, 73%);
+
+.cell--selected {
+  background: #6366f1 !important;
+  color: white !important;
+  border-color: #4f46e5 !important;
+  border-radius: 8px !important;
+}
+
+.cell--selected .price-tag {
+  color: #e0e7ff;
+}
+
+.cell--selected:hover {
+  background: #4f46e5 !important;
+}
+
+.cell--has-price {
+  border-bottom: 2px solid #d97706;
+}
+
+.cell--has-price.cell--selected {
+  border-bottom-color: #fbbf24;
 }
 </style>

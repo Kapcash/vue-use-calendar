@@ -1,17 +1,18 @@
 <template>
   <div
-    class="wrap"
+    class="cell-wrap"
     @mouseover="$emit('mouseover')"
     @mouseleave="$emit('mouseleave')"
   >
     <button
-      class="calendar-cell"
+      class="cell"
       :class="{
-        light: day.otherMonth,
-        active: day.state.selected,
-        hover: day.state.hovered,
-        between: day.state.between,
-        today: day.isToday,
+        'cell--other-month': day.otherMonth,
+        'cell--selected': day.state.selected,
+        'cell--hovered': day.state.hovered,
+        'cell--between': day.state.between,
+        'cell--today': day.isToday,
+        'cell--weekend': day.isWeekend,
       }"
       :disabled="day.state.disabled"
       @click="$emit('click')"
@@ -25,7 +26,7 @@
 import { PropType } from 'vue';
 import { CalendarDay } from '../../lib/types';
 
-const props = defineProps({
+defineProps({
   day: { type: Object as PropType<CalendarDay>, required: true },
 });
 
@@ -37,48 +38,75 @@ defineEmits({
 </script>
 
 <style scoped>
-.wrap {
-  padding: 4px;
+.cell-wrap {
+  padding: 1px;
 }
-button {
-  border: 1px solid lightgray;
-  border-radius: 5px;
-  width: 30px;
-  height: 30px;
-  background-color: hsl(0, 0%, 95%);
-}
-button:not(:disabled):hover {
+
+.cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #1e293b;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  background-color: hsl(0, 0%, 98%);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-button.today {
-  background-color: rgb(255, 200, 237);
+
+.cell:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
-button.light {
-  background-color: lightgoldenrodyellow;
+
+.cell--other-month {
+  color: #cbd5e1;
 }
-button.red {
-  color: red;
+
+.cell--today {
+  border-color: #6366f1;
+  color: #6366f1;
+  font-weight: 700;
 }
-button.red:disabled {
-  color: lightsalmon;
+
+.cell--weekend:not(.cell--other-month):not(.cell--selected):not(:disabled) {
+  color: #7c3aed;
 }
-button:not(:disabled).hover {
-  background-color: hsl(157, 75%, 78%);
+
+.cell:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
-button.hover:not(:disabled):hover {
-  background-color: hsl(157, 47%, 66%);
+
+.cell--hovered:not(:disabled) {
+  background: #ddd6fe;
+  border-color: #a78bfa;
+  color: #4c1d95;
 }
-button:not(:disabled).between {
-  background-color: hsl(36, 75%, 78%);
+
+.cell--between:not(:disabled) {
+  background: #ede9fe;
+  border-radius: 0;
+  color: #5b21b6;
 }
-button.between:not(:disabled):hover {
-  background-color: hsl(36, 47%, 66%);
+
+.cell--between:not(:disabled):hover {
+  background: #ddd6fe;
 }
-button.active {
-  background-color: hsl(248, 53%, 58%) !important;
+
+.cell--selected {
+  background: #6366f1 !important;
+  color: white !important;
+  border-color: #4f46e5 !important;
+  font-weight: 700;
+  border-radius: 8px !important;
 }
-button.active:hover {
-  background-color: hsl(248, 73%, 73%);
+
+.cell--selected:hover {
+  background: #4f46e5 !important;
 }
 </style>
