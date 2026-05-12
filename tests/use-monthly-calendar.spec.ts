@@ -643,4 +643,520 @@ describe('use-monthly-calendar', () => {
       expect(currentMonthAndYear.year).toEqual(2023);
     });
   });
+
+  describe('pureDays', () => {
+    it('should exclude otherMonth padding days when fullWeeks is true', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { days, pureDays } = useMonthlyCalendar({ ...defaultMonthlyOptions, fullWeeks: true });
+
+      // fullWeeks pads the month so days > pureDays
+      expect(pureDays.value.length).toBeLessThan(days.value.length);
+      pureDays.value.forEach(d => {
+        expect(d.otherMonth).toBeFalsy();
+      });
+    });
+
+    it('should equal days when fullWeeks is false', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { days, pureDays } = useMonthlyCalendar({ ...defaultMonthlyOptions, fullWeeks: false });
+
+      expect(pureDays.value).toHaveLength(days.value.length);
+    });
+  });
+
+  describe('programmatic API', () => {
+    it('should select a date via selectDate()', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { selectedDates, selectDate } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      expect(selectedDates.value).toHaveLength(0);
+
+      selectDate(new Date(2022, 2, 20));
+      expect(selectedDates.value).toHaveLength(1);
+    });
+
+    it('should clear all selections via clearSelection()', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates, clearSelection } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      listeners.selectMultiple(enabledDays[0]);
+      listeners.selectMultiple(enabledDays[1]);
+      expect(selectedDates.value).toHaveLength(2);
+
+      clearSelection();
+      expect(selectedDates.value).toHaveLength(0);
+    });
+
+    it('should store the selection for a non-cached month and show it once navigated there', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { months, selectedDates, selectDate, currentMonthAndYear } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      expect(months.value).toHaveLength(1);
+
+      // selectDate stores the ID but does not cache the month
+      selectDate(new Date(2022, 6, 10)); // July — not yet cached
+      expect(selectedDates.value).toHaveLength(0);
+
+      // Navigate to July
+      currentMonthAndYear.month = 6;
+      currentMonthAndYear.year = 2022;
+      await nextTick();
+
+      // Now the selection is visible
+      expect(selectedDates.value).toHaveLength(1);
+    });
+  });
+
+  describe('disabled option', () => {
+    it('should mark individually specified dates as disabled', () => {
+      const disabledDate = new Date(2022, 2, 17);
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, disabled: [disabledDate] });
+      const { currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const disabledDay = currentMonth.value.days.find(d => isSameDay(d.date, disabledDate));
+      expect(disabledDay).toBeDefined();
+      expect(disabledDay!.state.disabled).toBeTruthy();
+
+      // Neighbours should not be disabled by this rule
+      const march18 = currentMonth.value.days.find(d => d.date.getDate() === 18 && !d.otherMonth);
+      expect(march18?.state.disabled).toBeFalsy();
+    });
+
+    it('should not allow selecting a day that is in the disabled array', () => {
+      const disabledDate = new Date(2022, 2, 20);
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, disabled: [disabledDate] });
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const disabledDay = currentMonth.value.days.find(d => isSameDay(d.date, disabledDate))!;
+      listeners.selectSingle(disabledDay);
+
+      expect(disabledDay.state.selected).toBeFalsy();
+      expect(selectedDates.value).toHaveLength(0);
+    });
+  });
+
+  describe('cross-month range', () => {
+    it('should apply between state to days spanning two months', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, nextMonth, months, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      // Select the last enabled day of the current (first) month
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      const lastEnabledDay = enabledDays[enabledDays.length - 1];
+      listeners.selectRange(lastEnabledDay);
+
+      nextMonth();
+      await nextTick();
+
+      // Select the 5th enabled day in the next month
+      const nextMonthObj = months.value[months.value.length - 1];
+      const nextMonthEnabled = nextMonthObj.days.filter(d => !d.state.disabled && !d.otherMonth);
+      const targetDay = nextMonthEnabled[4];
+      listeners.selectRange(targetDay);
+
+      // Days strictly between the two endpoints should have between: true
+      const betweenInNextMonth = nextMonthObj.days.filter(d => d.state.between);
+      expect(betweenInNextMonth.length).toBeGreaterThan(0);
+    });
+
+    it('should mark newly-navigated-to month days as between when inside an existing range', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, nextMonth, months, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      // Build a 2-point range entirely within month 1
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[enabledDays.length - 1]);
+
+      // Navigate forward — the new month is outside the range; no between days expected there
+      nextMonth();
+      await nextTick();
+
+      const secondMonth = months.value[months.value.length - 1];
+      const betweenInSecondMonth = secondMonth.days.filter(d => d.state.between);
+      expect(betweenInSecondMonth).toHaveLength(0);
+    });
+  });
+
+  describe('eager pre-generation in finite mode', () => {
+    it('should eagerly cache all months up to maxDate on initialisation', () => {
+      const maxDate = addMonths(defaultOptions.minDate!, 2); // 3 months total
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { months } = useMonthlyCalendar({ infinite: false });
+
+      expect(months.value).toHaveLength(3);
+    });
+  });
+
+  // ── Cache eviction ──────────────────────────────────────────────────────────
+  //
+  // Default cache size = 13. Navigating far enough evicts the oldest non-pinned
+  // months. We use `currentMonthAndYear.year += 10` as a large jump that guarantees
+  // eviction without needing to step through 14 individual navigation calls.
+  // No minDate is set in these tests so all days are enabled.
+  describe('cache eviction and state persistence', () => {
+    const noConstraints = { startOn: new Date(2022, 0, 1) }; // January 2022, no minDate
+
+    it('should correctly regenerate the structure of an evicted month', async () => {
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear } = useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Jump 10 years forward — January 2022 is not selected so it gets evicted
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate back — January 2022 is regenerated from scratch
+      currentMonthAndYear.year = 2022;
+      await nextTick();
+
+      expect(currentMonth.value.month).toEqual(0);
+      expect(currentMonth.value.year).toEqual(2022);
+      expect(currentMonth.value.days).toHaveLength(31); // January always has 31 days
+      expect(areConsecutiveDays(currentMonth.value.days)).toBeTruthy();
+    });
+
+    it('should keep a month with a selected day in cache (pinning prevents eviction)', async () => {
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, listeners, selectedDates } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Select January 15 — this pins January 2022 in the cache
+      const jan15 = currentMonth.value.days[14];
+      listeners.selectSingle(jan15);
+      const jan15Id = jan15.id;
+
+      // Jump 10 years forward
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Jump back — January 2022 should still be in cache (pinned), not regenerated
+      currentMonthAndYear.year = 2022;
+      await nextTick();
+
+      const restoredDay = currentMonth.value.days.find(d => d.id === jan15Id);
+      expect(restoredDay).toBeDefined();
+      expect(restoredDay!.state.selected).toBeTruthy();
+      expect(selectedDates.value).toHaveLength(1);
+    });
+
+    it('should allow selecting days in a regenerated evicted month', async () => {
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, listeners, selectedDates } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // No selection — January 2022 is evictable
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate back — January 2022 is regenerated
+      currentMonthAndYear.year = 2022;
+      await nextTick();
+
+      const jan15 = currentMonth.value.days[14];
+      expect(jan15.state.disabled).toBeFalsy();
+
+      listeners.selectSingle(jan15);
+
+      expect(jan15.state.selected).toBeTruthy();
+      expect(selectedDates.value).toHaveLength(1);
+      expect(selectedDates.value[0].id).toEqual(jan15.id);
+    });
+
+    it('should restore selected state via stateMap when a non-pinned month is regenerated', async () => {
+      // Scenario: select in month A (pinned), then navigate far so intermediate months are evicted.
+      // Navigate back to an intermediate month — its days should reflect any prior state.
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, listeners, selectedDates } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Select January 15 (pins January)
+      const jan15 = currentMonth.value.days[14];
+      listeners.selectSingle(jan15);
+
+      // Jump to March 2022, select March 15 (replaces single selection)
+      currentMonthAndYear.month = 2;
+      await nextTick();
+      const march15 = currentMonth.value.days[14];
+      listeners.selectSingle(march15);
+      const march15Id = march15.id;
+
+      // Jump far away — March 2022 is now pinned; January and February are evictable
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate back to March 2022 — it was pinned, selection intact
+      currentMonthAndYear.year = 2022;
+      currentMonthAndYear.month = 2;
+      await nextTick();
+
+      expect(selectedDates.value).toHaveLength(1);
+      const restored = currentMonth.value.days.find(d => d.id === march15Id);
+      expect(restored!.state.selected).toBeTruthy();
+    });
+
+    it('should apply between state to a regenerated intermediate month inside a range', async () => {
+      // Range: January 15 → September 15, 2022.
+      // Intermediate months (Feb–Aug) are NOT navigated through, so they start uncached.
+      // After a big jump and return, navigating to May (intermediate) should show between.
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, listeners } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Select January 15 (range start) — pins January
+      const jan15 = currentMonth.value.days[14];
+      listeners.selectRange(jan15);
+
+      // Jump directly to September 2022, skipping Feb–Aug so they stay uncached
+      currentMonthAndYear.month = 8;
+      await nextTick();
+
+      // Select September 15 (range end) — pins September
+      const sept15 = currentMonth.value.days[14];
+      listeners.selectRange(sept15);
+
+      // Both endpoints are now pinned. Jump far forward to evict everything else.
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate to May 2022 — never cached before, generated fresh
+      currentMonthAndYear.year = 2022;
+      currentMonthAndYear.month = 4; // May
+      await nextTick();
+
+      // May is entirely within the Jan 15 → Sept 15 range.
+      // The flush:'sync' watchEffect must have applied between: true to all May days.
+      const mayDays = currentMonth.value.days;
+      expect(mayDays).toHaveLength(31);
+      mayDays.forEach(d => {
+        expect(d.state.between).toBeTruthy();
+      });
+    });
+
+    it('should apply between state to a previously-evicted month navigated back to', async () => {
+      // Same range as above but this time the intermediate month WAS cached (navigated through)
+      // before being evicted. After re-generation the between state must still be correct.
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, nextMonth, listeners } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Select January 15 (range start)
+      const jan15 = currentMonth.value.days[14];
+      listeners.selectRange(jan15);
+
+      // Step through Feb, Mar, Apr, May — caching them along the way
+      for (let i = 0; i < 4; i++) {
+        nextMonth();
+      }
+      await nextTick(); // at May 2022
+
+      // Jump to September 2022 and select September 15 (range end)
+      currentMonthAndYear.month = 8;
+      await nextTick();
+      const sept15 = currentMonth.value.days[14];
+      listeners.selectRange(sept15);
+
+      // May was cached when the range was incomplete (only 1 selected).
+      // After completing the range, the watchEffect retroactively sets May's between state.
+      // Now jump far away — May is evicted (not pinned), but stateMap retains its states.
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate back to May 2022 — regenerated via getOrCreateState, reusing stateMap entries
+      currentMonthAndYear.year = 2022;
+      currentMonthAndYear.month = 4;
+      await nextTick();
+
+      const mayDays = currentMonth.value.days;
+      expect(mayDays).toHaveLength(31);
+      mayDays.forEach(d => {
+        expect(d.state.between).toBeTruthy();
+      });
+    });
+
+    it('should clear pinning once selection is cleared, allowing future eviction', async () => {
+      const { useMonthlyCalendar } = useCalendar(noConstraints);
+      const { currentMonth, currentMonthAndYear, listeners, clearSelection } =
+        useMonthlyCalendar({ infinite: true, fullWeeks: false });
+
+      // Select January 15 (pins January), then clear the selection (unpins it)
+      listeners.selectSingle(currentMonth.value.days[14]);
+      clearSelection();
+
+      // Jump far away — January 2022 is no longer pinned, must be evictable
+      currentMonthAndYear.year = 2032;
+      await nextTick();
+
+      // Navigate back — January 2022 is regenerated (was evicted)
+      currentMonthAndYear.year = 2022;
+      await nextTick();
+
+      // Day should exist and be selectable, but not selected
+      const jan15 = currentMonth.value.days[14];
+      expect(jan15.state.selected).toBeFalsy();
+      listeners.selectSingle(jan15);
+      expect(jan15.state.selected).toBeTruthy();
+    });
+  });
+
+  // ── Shared state between otherMonth padding and real month days ─────────────
+  //
+  // With fullWeeks: true, March 2022 (starts Tuesday, ends Thursday) is padded:
+  //   Start: Feb 27 (Sun) Feb 28 (Mon) — otherMonth
+  //   End:   Apr 1  (Fri) Apr 2  (Sat) — otherMonth
+  //
+  // All these padding days share the exact same CalendarDayState object as the
+  // corresponding day in the adjacent real month (via the shared stateMap).
+  describe('shared state between otherMonth padding and real month', () => {
+    const marchStart = { startOn: new Date(2022, 2, 1) }; // March 2022, no minDate
+
+    it('selecting a padding day reflects in the real month when navigated to', async () => {
+      const { useMonthlyCalendar } = useCalendar(marchStart);
+      const { currentMonth, nextMonth, months, listeners } =
+        useMonthlyCalendar({ fullWeeks: true, infinite: true });
+
+      // Find April 1 as an otherMonth padding day within March's view
+      const april1Padding = currentMonth.value.days.find(
+        d => d.otherMonth && d.date.getMonth() === 3 && d.date.getDate() === 1,
+      );
+      expect(april1Padding).toBeDefined();
+
+      // Select it via March's view
+      listeners.selectSingle(april1Padding!);
+      expect(april1Padding!.state.selected).toBeTruthy();
+
+      // Navigate to April — April 1 is now a real day
+      nextMonth();
+      await nextTick();
+
+      const aprilMonth = months.value.find(m => m.month === 3)!;
+      const april1Real = aprilMonth.days.find(d => !d.otherMonth && d.date.getDate() === 1);
+      expect(april1Real).toBeDefined();
+
+      // Must share the exact same state object and be selected
+      expect(april1Real!.state.selected).toBeTruthy();
+      expect(april1Real!.state).toBe(april1Padding!.state);
+    });
+
+    it('selecting a real month day reflects immediately in the adjacent month padding', async () => {
+      const { useMonthlyCalendar } = useCalendar(marchStart);
+      const { currentMonth, nextMonth, prevMonth, months, listeners } =
+        useMonthlyCalendar({ fullWeeks: true, infinite: true });
+
+      // Navigate to April and select April 1 from the real view
+      nextMonth();
+      await nextTick();
+
+      const april1Real = currentMonth.value.days.find(d => !d.otherMonth && d.date.getDate() === 1);
+      expect(april1Real).toBeDefined();
+      listeners.selectSingle(april1Real!);
+      expect(april1Real!.state.selected).toBeTruthy();
+
+      // Navigate back to March
+      prevMonth();
+      await nextTick();
+
+      // April 1 appears as a padding day in March — must show selected via the shared state
+      const april1Padding = currentMonth.value.days.find(
+        d => d.otherMonth && d.date.getMonth() === 3 && d.date.getDate() === 1,
+      );
+      expect(april1Padding).toBeDefined();
+      expect(april1Padding!.state.selected).toBeTruthy();
+      expect(april1Padding!.state).toBe(april1Real!.state);
+    });
+
+    it('between state on a padding day mirrors the real month entry', async () => {
+      const { useMonthlyCalendar } = useCalendar(marchStart);
+      const { currentMonth, nextMonth, months, listeners } =
+        useMonthlyCalendar({ fullWeeks: true, infinite: true });
+
+      // Select March 28 as range start (last few days of March)
+      const march28 = currentMonth.value.days.find(d => !d.otherMonth && d.date.getDate() === 28);
+      expect(march28).toBeDefined();
+      listeners.selectRange(march28!);
+
+      // Navigate to April and select April 3 as range end
+      nextMonth();
+      await nextTick();
+
+      const april3 = currentMonth.value.days.find(d => !d.otherMonth && d.date.getDate() === 3);
+      expect(april3).toBeDefined();
+      listeners.selectRange(april3!);
+
+      // Range: March 28 → April 3. Between days: March 29, 30, 31, April 1, 2.
+      // April 1 appears as a real day in April AND as an otherMonth padding in March.
+      const aprilMonth = months.value.find(m => m.month === 3)!;
+      const marchMonth = months.value.find(m => m.month === 2)!;
+
+      const april1Real = aprilMonth.days.find(d => !d.otherMonth && d.date.getDate() === 1);
+      const april1Padding = marchMonth.days.find(
+        d => d.otherMonth && d.date.getMonth() === 3 && d.date.getDate() === 1,
+      );
+
+      expect(april1Real).toBeDefined();
+      expect(april1Padding).toBeDefined();
+
+      // Both are between — same state object
+      expect(april1Real!.state.between).toBeTruthy();
+      expect(april1Padding!.state.between).toBeTruthy();
+      expect(april1Padding!.state).toBe(april1Real!.state);
+    });
+
+    it('hover state on a padding day mirrors the real month entry', async () => {
+      const { useMonthlyCalendar } = useCalendar(marchStart);
+      const { currentMonth, nextMonth, months, listeners } =
+        useMonthlyCalendar({ fullWeeks: true, infinite: true });
+
+      // Select March 28 (1 selection → hover is active)
+      const march28 = currentMonth.value.days.find(d => !d.otherMonth && d.date.getDate() === 28);
+      listeners.selectRange(march28!);
+
+      // Navigate to April — hover over April 1
+      nextMonth();
+      await nextTick();
+
+      const april1Real = currentMonth.value.days.find(d => !d.otherMonth && d.date.getDate() === 1);
+      expect(april1Real).toBeDefined();
+      listeners.hoverRange(april1Real!);
+
+      // April 1 in April's view should be hovered
+      expect(april1Real!.state.hovered).toBeTruthy();
+
+      // Navigate back to March — padding day for April 1 should share hovered state
+      const marchMonth = months.value.find(m => m.month === 2)!;
+      const april1Padding = marchMonth.days.find(
+        d => d.otherMonth && d.date.getMonth() === 3 && d.date.getDate() === 1,
+      );
+      expect(april1Padding).toBeDefined();
+      expect(april1Padding!.state.hovered).toBeTruthy();
+      expect(april1Padding!.state).toBe(april1Real!.state);
+    });
+
+    it('cleared selection removes selected state from both padding and real entries', async () => {
+      const { useMonthlyCalendar } = useCalendar(marchStart);
+      const { currentMonth, nextMonth, months, listeners, clearSelection } =
+        useMonthlyCalendar({ fullWeeks: true, infinite: true });
+
+      // Select April 1 via March's padding
+      const april1Padding = currentMonth.value.days.find(
+        d => d.otherMonth && d.date.getMonth() === 3 && d.date.getDate() === 1,
+      );
+      listeners.selectSingle(april1Padding!);
+      expect(april1Padding!.state.selected).toBeTruthy();
+
+      // Navigate to April so the real day is in cache
+      nextMonth();
+      await nextTick();
+
+      const april1Real = months.value.find(m => m.month === 3)!
+        .days.find(d => !d.otherMonth && d.date.getDate() === 1);
+      expect(april1Real!.state.selected).toBeTruthy();
+
+      // Clear selection — both the padding and the real entry must deselect
+      clearSelection();
+
+      expect(april1Padding!.state.selected).toBeFalsy();
+      expect(april1Real!.state.selected).toBeFalsy();
+    });
+  });
 });

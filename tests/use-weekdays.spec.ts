@@ -42,6 +42,31 @@ describe('use-weekdays', () => {
     });
   });
 
+  describe('additional firstDayOfWeek values', () => {
+    it('should start on Sunday when firstDayOfWeek is 0 (default)', () => {
+      const { useWeekdays } = useCalendar({ ...defaultOptions, firstDayOfWeek: 0 });
+      const weekdays = useWeekdays();
+
+      expect(weekdays[0]).toEqual('S'); // Sunday
+    });
+
+    it('should start on Wednesday when firstDayOfWeek is 3', () => {
+      const { useWeekdays } = useCalendar({ ...defaultOptions, firstDayOfWeek: 3 });
+      const weekdays = useWeekdays();
+
+      const defaultOrder = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const expected = [...defaultOrder.slice(3), ...defaultOrder.slice(0, 3)];
+      expect(weekdays).toEqual(expected);
+    });
+
+    it('should start on Saturday when firstDayOfWeek is 6', () => {
+      const { useWeekdays } = useCalendar({ ...defaultOptions, firstDayOfWeek: 6 });
+      const weekdays = useWeekdays('iiii');
+
+      expect(weekdays[0]).toEqual('Saturday');
+    });
+  });
+
   describe('custom locale (fr)', () => {
     const frenchOptions = { ...defaultOptions, locale: fr };
 
