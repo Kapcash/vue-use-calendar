@@ -141,17 +141,26 @@ export interface MonthlyOptions<M extends SelectionMode | undefined = undefined>
   infinite?: boolean;
   fullWeeks?: boolean;
   mode?: M;
+  /** Number of consecutive months to display simultaneously. Defaults to 1. */
+  count?: number;
+  /** Number of months to advance/retreat per navigation step. Defaults to 1. */
+  step?: number;
 }
 
 export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> {
   infinite?: boolean;
   mode?: M;
+  /** Number of consecutive weeks to display simultaneously. Defaults to 1. */
+  count?: number;
+  /** Number of weeks to advance/retreat per navigation step. Defaults to 1. */
+  step?: number;
 }
 
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
   currentMonthAndYear: Reactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<T>>;
   months: ComputedRef<Month<T>[]>;
+  visibleMonths: ComputedRef<Month<T>[]>;
   days: ComputedRef<CalendarDay<T>[]>;
   pureDays: ComputedRef<CalendarDay<T>[]>;
   selectedDates: ComputedRef<CalendarDay<T>[]>;
@@ -168,6 +177,7 @@ export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode |
   currentWeek: ComputedRef<Week<T>>;
   currentWeekAndYear: Reactive<{ year: number; weekNumber: number }>;
   weeks: ComputedRef<Week<T>[]>;
+  visibleWeeks: ComputedRef<Week<T>[]>;
   days: ComputedRef<CalendarDay<T>[]>;
   selectedDates: ComputedRef<CalendarDay<T>[]>;
   nextWeek: () => void;

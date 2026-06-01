@@ -35,6 +35,7 @@ import MonthRangePage from './pages/MonthRangePage.vue';
 import WeeklyPage from './pages/WeeklyPage.vue';
 import PricePage from './pages/PricePage.vue';
 import MultiplePage from './pages/MultiplePage.vue';
+import MultiMonthPage from './pages/MultiMonthPage.vue';
 
 const tabs = [
   { id: 'datepicker', label: '📅 Date Picker', component: DatePickerPage },
@@ -42,6 +43,7 @@ const tabs = [
   { id: 'weekly', label: '🗓 Weekly', component: WeeklyPage },
   { id: 'price', label: '💰 Price Calendar', component: PricePage },
   { id: 'multiple', label: '✅ Multiple Select', component: MultiplePage },
+  { id: 'multimonth', label: '📅📅 Multi-Month', component: MultiMonthPage },
 ] as const;
 
 const activeTab = ref<string>('datepicker');

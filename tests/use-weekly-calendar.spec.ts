@@ -692,4 +692,105 @@ describe('use-weekly-calendar', () => {
       expect(Object.keys(listeners)).toHaveLength(5);
     });
   });
+
+  // ── Multi-week visible window (count / step) ────────────────────────────────
+  describe('count and step options (visibleWeeks)', () => {
+    it('visibleWeeks returns exactly count consecutive weeks on initialisation', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { visibleWeeks } = useWeeklyCalendar({ ...defaultWeeklyOptions, count: 2 });
+
+      expect(visibleWeeks.value).toHaveLength(2);
+      // The second visible week immediately follows the first
+      const firstLastDay = visibleWeeks.value[0].days[6];
+      const secondFirstDay = visibleWeeks.value[1].days[0];
+      const diff = (secondFirstDay.date.getTime() - firstLastDay.date.getTime()) / (1000 * 60 * 60 * 24);
+      expect(diff).toEqual(1);
+    });
+
+    it('visibleWeeks slides by 1 when step defaults to 1', async () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { visibleWeeks, nextWeek } = useWeeklyCalendar({ ...defaultWeeklyOptions, count: 2 });
+
+      const firstWeekId = visibleWeeks.value[0].id;
+      nextWeek();
+      await nextTick();
+
+      expect(visibleWeeks.value).toHaveLength(2);
+      expect(visibleWeeks.value[0].id).not.toEqual(firstWeekId);
+      // The new first visible week is exactly one week after the previous first
+      const prevFirstDay = new Date(String(firstWeekId).slice(0, 4) + '-01-01');
+      expect(visibleWeeks.value[0].weekNumber).toEqual(visibleWeeks.value[0].weekNumber);
+      // Simpler: step=1 means the new window starts one step ahead of the old one
+      const newFirstWeekNumber = visibleWeeks.value[0].weekNumber;
+      const oldFirstWeekNumber = weekFromWeekId(firstWeekId);
+      expect(Math.abs(newFirstWeekNumber - oldFirstWeekNumber)).toEqual(1);
+    });
+
+    it('visibleWeeks jumps by 2 when step is 2', async () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { visibleWeeks, nextWeek } = useWeeklyCalendar({ ...defaultWeeklyOptions, count: 2, step: 2 });
+
+      const firstWeekId = visibleWeeks.value[0].id;
+      nextWeek();
+      await nextTick();
+
+      expect(visibleWeeks.value).toHaveLength(2);
+      const oldFirstWeekNumber = weekFromWeekId(firstWeekId);
+      const newFirstWeekNumber = visibleWeeks.value[0].weekNumber;
+      expect(Math.abs(newFirstWeekNumber - oldFirstWeekNumber)).toEqual(2);
+    });
+
+    it('nextWeekEnabled is false when the last visible period would exceed maxDate', () => {
+      // 2 weeks visible. maxDate lands in the second visible week — stepping forward
+      // would push the last visible week past maxDate.
+      const maxDate = addWeeks(mockToday, 1); // end of week 2 is the boundary
+      const { useWeeklyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { nextWeekEnabled } = useWeeklyCalendar({ infinite: false, count: 2 });
+
+      // Currently showing week 1 + week 2. Stepping forward → week 2 + week 3 → week 3 > maxDate.
+      expect(nextWeekEnabled.value).toBeFalsy();
+    });
+
+    it('nextWeekEnabled is true when stepping forward keeps the window within maxDate', () => {
+      // 2 weeks visible, 3 weeks total range.
+      const maxDate = addWeeks(mockToday, 2);
+      const { useWeeklyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { nextWeekEnabled } = useWeeklyCalendar({ infinite: false, count: 2 });
+
+      // Currently showing week 1 + week 2. Stepping forward → week 2 + week 3 — both within range.
+      expect(nextWeekEnabled.value).toBeTruthy();
+    });
+
+    it('selection works across visibleWeeks (range spanning both visible weeks)', async () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { visibleWeeks, listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, count: 2 });
+
+      // Select first day of week 1 and last day of week 2 as a range
+      const week1Days = visibleWeeks.value[0].days.filter(d => !d.state.disabled);
+      const week2Days = visibleWeeks.value[1].days.filter(d => !d.state.disabled);
+
+      listeners.selectRange(week1Days[0]);
+      listeners.selectRange(week2Days[week2Days.length - 1]);
+
+      // Days after the start in week 1 should be between
+      const betweenInWeek1 = visibleWeeks.value[0].days.filter(d => d.state.between);
+      expect(betweenInWeek1.length).toBeGreaterThan(0);
+
+      // Days before the end in week 2 should be between
+      const betweenInWeek2 = visibleWeeks.value[1].days.filter(d => d.state.between);
+      expect(betweenInWeek2.length).toBeGreaterThan(0);
+    });
+
+    it('count: 1 (default) behaves identically to not passing count', () => {
+      const { useWeeklyCalendar: withCount } = useCalendar(defaultOptions);
+      const { useWeeklyCalendar: withoutCount } = useCalendar(defaultOptions);
+
+      const a = withCount({ ...defaultWeeklyOptions, count: 1 });
+      const b = withoutCount(defaultWeeklyOptions);
+
+      expect(a.visibleWeeks.value).toHaveLength(1);
+      expect(b.visibleWeeks.value).toHaveLength(1);
+      expect(a.visibleWeeks.value[0].id).toEqual(b.visibleWeeks.value[0].id);
+    });
+  });
 });

@@ -11,7 +11,7 @@ const DEFAULT_WEEKLY_OPTS = {
 
 export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
   return function useWeeklyCalendar<M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M>): WeeklyCalendarComposable<T, M> {
-    const { infinite, mode } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
+    const { infinite, mode, count = 1, step = 1 } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
     const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
 
@@ -52,6 +52,8 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
         }
         return true;
       },
+      count,
+      step,
     );
 
     // Pre-generate all weeks in finite mode
@@ -107,6 +109,7 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       currentWeek: nav.currentPeriod,
       currentWeekAndYear,
       weeks,
+      visibleWeeks: nav.visiblePeriods,
       days,
       selectedDates,
       nextWeek: () => { nav.next(); },

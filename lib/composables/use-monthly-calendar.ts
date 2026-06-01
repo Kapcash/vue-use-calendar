@@ -7,7 +7,7 @@ import { isDateDisabled } from "../utils/date";
 
 export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
   return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M> = {}): MonthlyCalendarComposable<T, M> {
-    const { infinite = false, fullWeeks = true, mode } = opts;
+    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1 } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -26,7 +26,7 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       ? monthIdFromDate(globalOptions.maxDate) as MonthId
       : startMonthId;
     const preGenerateCount = endMonthId - startMonthId + 1;
-    const cacheSize = Math.max(13, preGenerateCount);
+    const cacheSize = Math.max(13, preGenerateCount, count + 10);
 
     // Create selection state — getOrCreateState is needed by generateMonth
     const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
@@ -52,6 +52,8 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
         }
         return true;
       },
+      count,
+      step,
     );
 
     // Pre-generate all months from startOn to maxDate when maxDate is set
@@ -121,6 +123,7 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       currentMonth: nav.currentPeriod,
       currentMonthAndYear,
       months,
+      visibleMonths: nav.visiblePeriods,
       days,
       pureDays,
       selectedDates,

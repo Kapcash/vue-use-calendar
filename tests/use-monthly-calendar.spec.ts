@@ -1159,4 +1159,89 @@ describe('use-monthly-calendar', () => {
       expect(april1Real!.state.selected).toBeFalsy();
     });
   });
+
+  // ── Multi-month visible window (count / step) ───────────────────────────────
+  describe('count and step options (visibleMonths)', () => {
+    it('visibleMonths returns exactly count consecutive months on initialisation', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { visibleMonths } = useMonthlyCalendar({ ...defaultMonthlyOptions, count: 2 });
+
+      expect(visibleMonths.value).toHaveLength(2);
+      expect(visibleMonths.value[0].month).toEqual(defaultOptions.minDate.getMonth());
+      expect(visibleMonths.value[0].year).toEqual(defaultOptions.minDate.getFullYear());
+      expect(visibleMonths.value[1].month).toEqual((defaultOptions.minDate.getMonth() + 1) % 12);
+    });
+
+    it('visibleMonths slides by 1 when step defaults to 1', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { visibleMonths, nextMonth } = useMonthlyCalendar({ ...defaultMonthlyOptions, count: 2 });
+
+      const firstMonth = visibleMonths.value[0].month;
+      nextMonth();
+      await nextTick();
+
+      expect(visibleMonths.value[0].month).toEqual((firstMonth + 1) % 12);
+      expect(visibleMonths.value).toHaveLength(2);
+    });
+
+    it('visibleMonths jumps by 2 when step is 2', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { visibleMonths, nextMonth } = useMonthlyCalendar({ ...defaultMonthlyOptions, count: 2, step: 2 });
+
+      const firstMonth = visibleMonths.value[0].month;
+      nextMonth();
+      await nextTick();
+
+      expect(visibleMonths.value[0].month).toEqual((firstMonth + 2) % 12);
+      expect(visibleMonths.value).toHaveLength(2);
+    });
+
+    it('nextMonthEnabled is false when the last visible period would exceed maxDate', () => {
+      // 2 months visible: Mar + Apr 2022. maxDate is end of April.
+      const maxDate = endOfMonth(addMonths(defaultOptions.minDate!, 1));
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { nextMonthEnabled } = useMonthlyCalendar({ infinite: false, count: 2 });
+
+      // Currently showing Mar + Apr. Stepping forward would show Apr + May → May > maxDate.
+      expect(nextMonthEnabled.value).toBeFalsy();
+    });
+
+    it('nextMonthEnabled is true when stepping forward keeps the window within maxDate', () => {
+      // 2 months visible, 3 months total range: Mar, Apr, May.
+      const maxDate = endOfMonth(addMonths(defaultOptions.minDate!, 2));
+      const { useMonthlyCalendar } = useCalendar({ ...defaultOptions, maxDate });
+      const { nextMonthEnabled } = useMonthlyCalendar({ infinite: false, count: 2 });
+
+      // Currently showing Mar + Apr. Stepping forward shows Apr + May — both within range.
+      expect(nextMonthEnabled.value).toBeTruthy();
+    });
+
+    it('selection works across visibleMonths (select in month 1, shows selected in month 2 range)', async () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { visibleMonths, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, count: 2 });
+
+      // Select a day in the first visible month and a day in the second as a range
+      const month1Days = visibleMonths.value[0].days.filter(d => !d.state.disabled && !d.otherMonth);
+      const month2Days = visibleMonths.value[1].days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(month1Days[0]);
+      listeners.selectRange(month2Days[4]);
+
+      // Days between the two endpoints should have between state
+      const betweenInMonth2 = visibleMonths.value[1].days.filter(d => d.state.between);
+      expect(betweenInMonth2.length).toBeGreaterThan(0);
+    });
+
+    it('count: 1 (default) behaves identically to not passing count', () => {
+      const { useMonthlyCalendar: withCount } = useCalendar(defaultOptions);
+      const { useMonthlyCalendar: withoutCount } = useCalendar(defaultOptions);
+
+      const a = withCount({ ...defaultMonthlyOptions, count: 1 });
+      const b = withoutCount(defaultMonthlyOptions);
+
+      expect(a.visibleMonths.value).toHaveLength(1);
+      expect(b.visibleMonths.value).toHaveLength(1);
+      expect(a.visibleMonths.value[0].id).toEqual(b.visibleMonths.value[0].id);
+    });
+  });
 });

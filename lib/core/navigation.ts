@@ -11,6 +11,8 @@ import { computed, shallowReactive, ref, toValue, ComputedRef, MaybeRefOrGetter 
  * @param maxCacheSize    - Maximum number of cached periods (evicts farthest from current)
  * @param canEvict        - Optional predicate; return false to pin a period in the cache.
  *                          Falls back to evicting the absolute farthest if all entries are pinned.
+ * @param windowSize      - Number of consecutive periods to display simultaneously. Defaults to 1.
+ * @param step            - Number of periods to advance/retreat per navigation call. Defaults to 1.
  */
 export function createNavigation<TId extends number, TPeriod>(
   startId: TId,
@@ -22,12 +24,11 @@ export function createNavigation<TId extends number, TPeriod>(
   prevId?: (id: TId) => TId,
   maxCacheSize = 13,
   canEvict?: (id: TId) => boolean,
+  windowSize = 1,
+  step = 1,
 ) {
   const currentPeriodId = ref<TId>(startId);
   const periodCache = shallowReactive(new Map<TId, TPeriod>());
-
-  // Seed the cache with the start period
-  periodCache.set(startId, generatePeriod(startId));
 
   const _nextId = nextId ?? ((id: TId) => (id + 1) as TId);
   const _prevId = prevId ?? ((id: TId) => (id - 1) as TId);
@@ -39,6 +40,18 @@ export function createNavigation<TId extends number, TPeriod>(
     }
     return periodCache.get(id)!;
   }
+
+  /** Ensures all `windowSize` consecutive periods starting at `fromId` are cached. */
+  function ensureWindow(fromId: TId): void {
+    let id = fromId;
+    for (let i = 0; i < windowSize; i++) {
+      ensureCached(id);
+      if (i < windowSize - 1) { id = _nextId(id); }
+    }
+  }
+
+  // Seed the initial window (requires _nextId to be initialized first)
+  ensureWindow(startId);
 
   /**
    * Evicts the cached period farthest from `referenceId` if cache size exceeds maxCacheSize.
@@ -77,31 +90,43 @@ export function createNavigation<TId extends number, TPeriod>(
   const nextEnabled = computed(() => {
     if (toValue(infinite)) { return true; }
     if (maxId === undefined) { return false; }
-    return _nextId(currentPeriodId.value) <= maxId;
+    // The last visible period after stepping forward must still be within bounds.
+    let id = currentPeriodId.value;
+    for (let i = 0; i < step + windowSize - 1; i++) { id = _nextId(id); }
+    return id <= maxId;
   });
 
   const prevEnabled = computed(() => {
     if (toValue(infinite)) { return true; }
     if (minId === undefined) { return false; }
-    return _prevId(currentPeriodId.value) >= minId;
+    // After stepping back, the new start of the window must be within bounds.
+    let id = currentPeriodId.value;
+    for (let i = 0; i < step; i++) { id = _prevId(id); }
+    return id >= minId;
   });
 
   function next() {
-    const nid = _nextId(currentPeriodId.value);
-    if (!toValue(infinite) && maxId !== undefined && nid > maxId) { return; }
-    ensureCached(nid);
+    let nid = currentPeriodId.value;
+    for (let i = 0; i < step; i++) { nid = _nextId(nid); }
+    if (!toValue(infinite) && maxId !== undefined) {
+      let lastVisible = nid;
+      for (let i = 0; i < windowSize - 1; i++) { lastVisible = _nextId(lastVisible); }
+      if (lastVisible > maxId) { return; }
+    }
+    ensureWindow(nid);
     currentPeriodId.value = nid;
   }
 
   function prev() {
-    const pid = _prevId(currentPeriodId.value);
+    let pid = currentPeriodId.value;
+    for (let i = 0; i < step; i++) { pid = _prevId(pid); }
     if (!toValue(infinite) && minId !== undefined && pid < minId) { return; }
-    ensureCached(pid);
+    ensureWindow(pid);
     currentPeriodId.value = pid;
   }
 
   function jumpTo(id: TId) {
-    ensureCached(id);
+    ensureWindow(id);
     currentPeriodId.value = id;
   }
 
@@ -119,10 +144,24 @@ export function createNavigation<TId extends number, TPeriod>(
       .map(([, v]) => v);
   });
 
+  /** Get exactly `windowSize` consecutive periods starting at the current period. */
+  const visiblePeriods = computed(() => {
+    void currentPeriodId.value;
+    const result: TPeriod[] = [];
+    let id = currentPeriodId.value;
+    for (let i = 0; i < windowSize; i++) {
+      const period = periodCache.get(id);
+      if (period !== undefined) { result.push(period); }
+      if (i < windowSize - 1) { id = _nextId(id); }
+    }
+    return result;
+  });
+
   return {
     currentPeriodId,
     currentPeriod,
     allPeriods,
+    visiblePeriods,
     nextEnabled,
     prevEnabled,
     next,
