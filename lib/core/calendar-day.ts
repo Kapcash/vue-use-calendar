@@ -11,9 +11,9 @@ import { dayIdFromDate, checkIsToday, checkIsWeekend, isDateDisabled } from "../
  * (e.g. a "real" day and its otherMonth padding copy) share the exact same
  * reactive state reference.
  */
-export function createCalendarDay<T, M extends SelectionMode | undefined = undefined>(
+export function createCalendarDay<T>(
   date: Date,
-  options: NormalizedCalendarOptions<T, M>,
+  options: NormalizedCalendarOptions<T>,
   overrides?: { otherMonth?: boolean; disabled?: boolean },
   stateProvider?: StateProvider,
 ): CalendarDay<T> {
@@ -52,10 +52,10 @@ export function createCalendarDay<T, M extends SelectionMode | undefined = undef
  * Never mutates the input dates.
  * Throws if `from > to`.
  */
-export function generateConsecutiveDays<T, M extends SelectionMode | undefined = undefined>(
+export function generateConsecutiveDays<T>(
   from: Date,
   to: Date,
-  options: NormalizedCalendarOptions<T, M>,
+  options: NormalizedCalendarOptions<T>,
   overrides?: { otherMonth?: boolean },
   stateProvider?: StateProvider,
 ): CalendarDay<T>[] {

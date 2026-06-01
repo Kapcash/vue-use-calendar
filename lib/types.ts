@@ -112,19 +112,18 @@ export interface SelectionHandlers<T = unknown> {
 
 // ── Options ─────────────────────────────────────────────────────────
 
-export interface CalendarOptions<T = unknown, M extends SelectionMode | undefined = undefined> {
-  startOn?: MaybeRefOrGetter<DateInput>;
-  minDate?: MaybeRefOrGetter<DateInput>;
-  maxDate?: MaybeRefOrGetter<DateInput>;
-  disabled?: MaybeRefOrGetter<Array<DateInput>>;
-  firstDayOfWeek?: MaybeRefOrGetter<FirstDayOfWeek>;
-  locale?: MaybeRefOrGetter<Locale>;
-  preSelection?: MaybeRefOrGetter<Array<Date> | Date>;
+export interface CalendarOptions<T = unknown> {
+  startOn?: MaybeRefOrGetter<DateInput | undefined>;
+  minDate?: MaybeRefOrGetter<DateInput | undefined>;
+  maxDate?: MaybeRefOrGetter<DateInput | undefined>;
+  disabled?: MaybeRefOrGetter<Array<DateInput> | undefined>;
+  firstDayOfWeek?: MaybeRefOrGetter<FirstDayOfWeek | undefined>;
+  locale?: MaybeRefOrGetter<Locale | undefined>;
+  preSelection?: MaybeRefOrGetter<Array<Date> | Date | undefined>;
   meta?: (date: Date) => T;
-  mode?: M;
 }
 
-export interface NormalizedCalendarOptions<T = unknown, M extends SelectionMode | undefined = undefined> {
+export interface NormalizedCalendarOptions<T = unknown> {
   startOn: Date;
   minDate?: Date;
   maxDate?: Date;
@@ -134,18 +133,19 @@ export interface NormalizedCalendarOptions<T = unknown, M extends SelectionMode 
   locale?: Locale;
   preSelection: Date[];
   meta: (date: Date) => T;
-  mode: M;
 }
 
 // ── Composable return types ─────────────────────────────────────────
 
-export interface MonthlyOptions {
+export interface MonthlyOptions<M extends SelectionMode | undefined = undefined> {
   infinite?: boolean;
   fullWeeks?: boolean;
+  mode?: M;
 }
 
-export interface WeeklyOptions {
+export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> {
   infinite?: boolean;
+  mode?: M;
 }
 
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
@@ -179,9 +179,9 @@ export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode |
   clearSelection: () => void;
 }
 
-export interface CalendarComposables<T = unknown, M extends SelectionMode | undefined = undefined> {
-  useMonthlyCalendar: (opts?: MonthlyOptions) => MonthlyCalendarComposable<T, M>;
-  useWeeklyCalendar: (opts?: WeeklyOptions) => WeeklyCalendarComposable<T, M>;
+export interface CalendarComposables<T = unknown> {
+  useMonthlyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: MonthlyOptions<M>) => MonthlyCalendarComposable<T, M>;
+  useWeeklyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M>) => WeeklyCalendarComposable<T, M>;
   useWeekdays: (format?: MaybeRefOrGetter<WeekdayInputFormat>) => ComputedRef<string[]>;
   useMonthsList: (opts?: { format?: MaybeRefOrGetter<MonthInputFormat> }) => ComputedRef<string[]>;
   useYearsList: (opts?: YearsListOptions) => ComputedRef<string[]>;

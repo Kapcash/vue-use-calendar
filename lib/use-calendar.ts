@@ -1,4 +1,4 @@
-import { CalendarOptions, CalendarComposables, NormalizedCalendarOptions, FirstDayOfWeek, SelectionMode } from './types';
+import { CalendarOptions, CalendarComposables, NormalizedCalendarOptions, FirstDayOfWeek } from './types';
 import { useWeekdays } from "./composables/use-weekdays";
 import { monthlyCalendar } from "./composables/use-monthly-calendar";
 import { weeklyCalendar } from "./composables/use-weekly-calendar";
@@ -8,12 +8,12 @@ import { startOfDay } from 'date-fns';
 import { toValue } from 'vue';
 import { dayIdFromDate } from './utils/date';
 
-export function useCalendar<T = unknown, M extends SelectionMode | undefined = undefined>(rawOptions?: CalendarOptions<T, M>): CalendarComposables<T, M> {
-  const options = normalizeGlobalParameters<T, M>(rawOptions);
+export function useCalendar<T = unknown>(rawOptions?: CalendarOptions<T>): CalendarComposables<T> {
+  const options = normalizeGlobalParameters<T>(rawOptions);
 
   return {
-    useMonthlyCalendar: monthlyCalendar<T, M>(options),
-    useWeeklyCalendar: weeklyCalendar<T, M>(options),
+    useMonthlyCalendar: monthlyCalendar<T>(options),
+    useWeeklyCalendar: weeklyCalendar<T>(options),
     useWeekdays: useWeekdays(options),
     useMonthsList: useMonthsList(options),
     useYearsList: useYearsList(options),
@@ -26,7 +26,7 @@ export function useCalendar<T = unknown, M extends SelectionMode | undefined = u
  * - skip non valid options
  * - each property is a getter so refs / getters passed as option values stay reactive
  */
-export function normalizeGlobalParameters<T, M extends SelectionMode | undefined = undefined>(opts: CalendarOptions<T, M> = {}): NormalizedCalendarOptions<T, M> {
+export function normalizeGlobalParameters<T>(opts: CalendarOptions<T> = {}): NormalizedCalendarOptions<T> {
   return {
     get startOn(): Date {
       const minDate = toValue(opts.minDate) ? startOfDay(new Date(toValue(opts.minDate)!)) : undefined;
@@ -60,9 +60,6 @@ export function normalizeGlobalParameters<T, M extends SelectionMode | undefined
     },
     get meta(): (date: Date) => T {
       return opts.meta ?? ((() => undefined) as unknown as (date: Date) => T);
-    },
-    get mode(): M {
-      return opts.mode as M;
     },
   };
 }

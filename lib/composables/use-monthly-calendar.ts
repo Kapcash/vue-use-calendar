@@ -1,12 +1,13 @@
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOptions, MonthId, SelectionMode } from "../types";
 import { monthIdFromDate, monthIdFromYearMonth, monthFromMonthId, yearFromMonthId, generateMonth } from "../utils/month";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
+import { isDateDisabled } from "../utils/date";
 
-export function monthlyCalendar<T, M extends SelectionMode | undefined = undefined>(globalOptions: NormalizedCalendarOptions<T, M>) {
-  return function useMonthlyCalendar(opts: MonthlyOptions = {}): MonthlyCalendarComposable<T, M> {
-    const { infinite = false, fullWeeks = true } = opts;
+export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
+  return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M> = {}): MonthlyCalendarComposable<T, M> {
+    const { infinite = false, fullWeeks = true, mode } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -30,7 +31,7 @@ export function monthlyCalendar<T, M extends SelectionMode | undefined = undefin
     // Create selection state — getOrCreateState is needed by generateMonth
     const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
-      globalOptions.mode,
+      mode,
     );
 
     const nav = createNavigation<MonthId, Month<T>>(
@@ -75,6 +76,17 @@ export function monthlyCalendar<T, M extends SelectionMode | undefined = undefin
     // Pure days = days without otherMonth padding
     const pureDays = computed(() => {
       return days.value.filter(d => !d.otherMonth);
+    });
+
+    // Keep disabled states in sync for already-cached days when reactive options change.
+    // Iterating days.value also tracks nav cache changes so newly-navigated days are covered.
+    watchEffect(() => {
+      const disabledIds = globalOptions.disabledIds;
+      const minDate = globalOptions.minDate;
+      const maxDate = globalOptions.maxDate;
+      for (const day of days.value) {
+        day.state.disabled = isDateDisabled(day.date, disabledIds, minDate, maxDate);
+      }
     });
 
     const selectedDates = computed(() => pureDays.value.filter(d => selectedIds.has(d.id)));

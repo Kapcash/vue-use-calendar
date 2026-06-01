@@ -7,7 +7,7 @@ const DEFAULT_YEAR_FORMAT = 'yyyy';
 
 /** Generates a consecutive list of years formatted as strings. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useYearsList (opts: NormalizedCalendarOptions<any, any>): (options?: YearsListOptions) => ComputedRef<string[]> {
+export function useYearsList (opts: NormalizedCalendarOptions<any>): (options?: YearsListOptions) => ComputedRef<string[]> {
   return (options: YearsListOptions = {}): ComputedRef<string[]> => {
     const currentYear = new Date().getFullYear();
 

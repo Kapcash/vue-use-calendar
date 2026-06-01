@@ -662,15 +662,15 @@ describe('use-weekly-calendar', () => {
 
   describe('mode narrowing', () => {
     it('should expose only selectSingle for mode: single', () => {
-      const { useWeeklyCalendar } = useCalendar({ ...defaultOptions, mode: 'single' as const });
-      const { listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, mode: 'single' as const });
 
       expect(Object.keys(listeners)).toEqual(['selectSingle']);
     });
 
     it('should expose only range handlers for mode: range', () => {
-      const { useWeeklyCalendar } = useCalendar({ ...defaultOptions, mode: 'range' as const });
-      const { listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, mode: 'range' as const });
 
       expect(Object.keys(listeners)).toEqual(
         expect.arrayContaining(['selectRange', 'hoverRange', 'resetHover']),
@@ -679,8 +679,8 @@ describe('use-weekly-calendar', () => {
     });
 
     it('should expose only selectMultiple for mode: multiple', () => {
-      const { useWeeklyCalendar } = useCalendar({ ...defaultOptions, mode: 'multiple' as const });
-      const { listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, mode: 'multiple' as const });
 
       expect(Object.keys(listeners)).toEqual(['selectMultiple']);
     });

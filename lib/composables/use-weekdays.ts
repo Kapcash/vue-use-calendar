@@ -6,7 +6,7 @@ import { WeekdayInputFormat, NormalizedCalendarOptions } from '../types';
 const FIXED_SUNDAY = new Date(2000, 0, 2);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useWeekdays (opts: NormalizedCalendarOptions<any, any>): (weekdayFormat?: MaybeRefOrGetter<WeekdayInputFormat>) => ComputedRef<string[]> {
+export function useWeekdays (opts: NormalizedCalendarOptions<any>): (weekdayFormat?: MaybeRefOrGetter<WeekdayInputFormat>) => ComputedRef<string[]> {
   return (weekdayFormat: MaybeRefOrGetter<WeekdayInputFormat> = 'iiiii'): ComputedRef<string[]> => {
     const weekdays = computed<Date[]>(() => {
       const weekdaysOrdered = Array.from(Array(7).keys()).map(i => addDays(FIXED_SUNDAY, i));

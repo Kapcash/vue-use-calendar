@@ -10,7 +10,7 @@ interface MonthsListOptions {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useMonthsList (opts: NormalizedCalendarOptions<any, any>): (options?: MonthsListOptions) => ComputedRef<string[]> {
+export function useMonthsList (opts: NormalizedCalendarOptions<any>): (options?: MonthsListOptions) => ComputedRef<string[]> {
   return (options: MonthsListOptions = {}): ComputedRef<string[]> => {
     const anyJanuary = new Date(2000, 0, 1);
     const months = Array.from(Array(NB_OF_MONTHS).keys()).map(i => addMonths(anyJanuary, i));

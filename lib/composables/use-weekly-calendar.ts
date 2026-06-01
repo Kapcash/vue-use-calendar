@@ -1,16 +1,17 @@
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId, SelectionMode } from "../types";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
 import { weekIdFromDate, weekFromWeekId, yearFromWeekId, generateWeek, makeNextWeekId, makePrevWeekId } from "../utils/week";
+import { isDateDisabled } from "../utils/date";
 
-const DEFAULT_WEEKLY_OPTS: WeeklyOptions = {
+const DEFAULT_WEEKLY_OPTS = {
   infinite: false,
 };
 
-export function weeklyCalendar<T, M extends SelectionMode | undefined = undefined>(globalOptions: NormalizedCalendarOptions<T, M>) {
-  return function useWeeklyCalendar(opts?: WeeklyOptions): WeeklyCalendarComposable<T, M> {
-    const { infinite } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
+export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
+  return function useWeeklyCalendar<M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M>): WeeklyCalendarComposable<T, M> {
+    const { infinite, mode } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
     const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
 
@@ -26,7 +27,7 @@ export function weeklyCalendar<T, M extends SelectionMode | undefined = undefine
     // Create selection state — getOrCreateState is needed by generateWeek
     const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
-      globalOptions.mode,
+      mode as M,
     );
 
     const nextWeekId = makeNextWeekId(globalOptions.firstDayOfWeek);
@@ -74,6 +75,16 @@ export function weeklyCalendar<T, M extends SelectionMode | undefined = undefine
 
     const days = computed(() => {
       return weeks.value.flatMap(w => w.days);
+    });
+
+    // Keep disabled states in sync for already-cached days when reactive options change.
+    watchEffect(() => {
+      const disabledIds = globalOptions.disabledIds;
+      const minDate = globalOptions.minDate;
+      const maxDate = globalOptions.maxDate;
+      for (const day of days.value) {
+        day.state.disabled = isDateDisabled(day.date, disabledIds, minDate, maxDate);
+      }
     });
 
     const selectedDates = computed(() => days.value.filter(d => selectedIds.has(d.id)));

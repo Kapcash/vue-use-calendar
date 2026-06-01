@@ -39,9 +39,9 @@ export function weekIdFromDate(date: Date, firstDayOfWeek: FirstDayOfWeek): Week
 /**
  * Generate a Week object for a given WeekId.
  */
-export function generateWeek<T, M extends SelectionMode | undefined = undefined>(
+export function generateWeek<T>(
   weekId: WeekId,
-  options: NormalizedCalendarOptions<T, M>,
+  options: NormalizedCalendarOptions<T>,
   stateProvider?: StateProvider,
 ): Week<T> {
   const weekNumber = weekFromWeekId(weekId);

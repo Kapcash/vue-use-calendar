@@ -27,9 +27,9 @@ export function monthFromMonthId(monthId: MonthId): number {
 /**
  * Generate a Month object for a given MonthId.
  */
-export function generateMonth<T, M extends SelectionMode | undefined = undefined>(
+export function generateMonth<T>(
   monthId: MonthId,
-  options: NormalizedCalendarOptions<T, M>,
+  options: NormalizedCalendarOptions<T>,
   fullWeeks: boolean,
   stateProvider?: StateProvider,
 ): Month<T> {
@@ -58,11 +58,11 @@ export function generateMonth<T, M extends SelectionMode | undefined = undefined
  * Pad a month's days array so it starts and ends on full weeks.
  * Padding days are marked with `otherMonth: true`.
  */
-function padFullWeeks<T, M extends SelectionMode | undefined = undefined>(
+function padFullWeeks<T>(
   days: CalendarDay<T>[],
   monthStart: Date,
   monthEnd: Date,
-  options: NormalizedCalendarOptions<T, M>,
+  options: NormalizedCalendarOptions<T>,
   stateProvider?: StateProvider,
 ): void {
   const weekStart = startOfWeek(monthStart, { weekStartsOn: options.firstDayOfWeek });
