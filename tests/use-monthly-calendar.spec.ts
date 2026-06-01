@@ -570,6 +570,109 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('selection constraints', () => {
+    it('should reject range selection shorter than minRange', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'range', minRange: 5 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[2]); // 3 days range, less than minRange=5
+
+      // Second selection rejected — only 1 selected
+      expect(selectedDates.value).toHaveLength(1);
+      expect(enabledDays[2].state.selected).toBe(false);
+    });
+
+    it('should accept range selection at exactly minRange', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'range', minRange: 5 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[4]); // 5 days range, exactly minRange=5
+
+      expect(selectedDates.value).toHaveLength(2);
+    });
+
+    it('should reject range selection longer than maxRange', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'range', maxRange: 5 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]); // 7 days, exceeds maxRange=5
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(enabledDays[6].state.selected).toBe(false);
+    });
+
+    it('should accept range selection at exactly maxRange', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'range', maxRange: 5 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[4]); // 5 days, exactly maxRange=5
+
+      expect(selectedDates.value).toHaveLength(2);
+    });
+
+    it('should block selection beyond maxSelections in multiple mode', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'multiple', maxSelections: 3 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectMultiple(enabledDays[0]);
+      listeners.selectMultiple(enabledDays[1]);
+      listeners.selectMultiple(enabledDays[2]);
+      listeners.selectMultiple(enabledDays[3]); // Should be blocked
+
+      expect(selectedDates.value).toHaveLength(3);
+      expect(enabledDays[3].state.selected).toBe(false);
+    });
+
+    it('should allow deselecting when at maxSelections', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'multiple', maxSelections: 3 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectMultiple(enabledDays[0]);
+      listeners.selectMultiple(enabledDays[1]);
+      listeners.selectMultiple(enabledDays[2]);
+
+      // Deselect one
+      listeners.selectMultiple(enabledDays[1]);
+      expect(selectedDates.value).toHaveLength(2);
+
+      // Now can select a new one
+      listeners.selectMultiple(enabledDays[3]);
+      expect(selectedDates.value).toHaveLength(3);
+    });
+
+    it('should clamp hoverRange preview to maxRange', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'range', maxRange: 5 });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.hoverRange(enabledDays[10]); // Hover far beyond maxRange
+
+      const hoveredDays = currentMonth.value.days.filter(d => d.state.hovered);
+      // Should be clamped: at most maxRange-1 days hovered (between + target)
+      // With maxRange=5, anchor at [0], hover clamped to [4], so hovered are [1,2,3,4] = 4
+      expect(hoveredDays.length).toBeLessThanOrEqual(4);
+      expect(hoveredDays.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('isRangeStart / isRangeEnd', () => {
     it('should mark range start and end when two dates are selected', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);

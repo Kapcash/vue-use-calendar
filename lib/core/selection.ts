@@ -1,6 +1,13 @@
 import { computed, reactive, shallowReactive, watchEffect } from "vue";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import { CalendarDay, CalendarDayState, ModeHandlers, SelectionHandlers, SelectionMode, StateProvider } from "../types";
 import { dayIdFromDate } from "../utils/date";
+
+export interface SelectionConstraints {
+  minRange?: number;
+  maxRange?: number;
+  maxSelections?: number;
+}
 
 /**
  * Centralized selection and hover state management.
@@ -22,7 +29,9 @@ import { dayIdFromDate } from "../utils/date";
 export function createSelectionState<T, M extends SelectionMode | undefined = undefined>(
   preSelection: Date[],
   mode?: M,
+  constraints: SelectionConstraints = {},
 ) {
+  const { minRange, maxRange, maxSelections } = constraints;
   const preSelectedIds = preSelection.map(dayIdFromDate);
 
   const selectedIds = reactive(new Set<string>(preSelectedIds));
@@ -167,6 +176,13 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
       selectedIds.delete(day.id);
       setSelected(day.id, false);
     } else {
+      // Validate range constraints before accepting second endpoint
+      if (selectedIds.size === 1) {
+        const existingId = selectedIds.values().next().value as string;
+        const rangeLength = Math.abs(differenceInCalendarDays(parseISO(day.id), parseISO(existingId))) + 1;
+        if (minRange !== undefined && rangeLength < minRange) { return; }
+        if (maxRange !== undefined && rangeLength > maxRange) { return; }
+      }
       selectedIds.add(day.id);
       setSelected(day.id, true);
     }
@@ -179,6 +195,7 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
       selectedIds.delete(day.id);
       setSelected(day.id, false);
     } else {
+      if (maxSelections !== undefined && selectedIds.size >= maxSelections) { return; }
       selectedIds.add(day.id);
       setSelected(day.id, true);
     }
@@ -189,7 +206,21 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
     clearHoverStates();
 
     const selectedId = selectedIds.values().next().value as string;
-    const hovId = day.id;
+    let hovId = day.id;
+
+    // Clamp hover to maxRange distance from the anchor
+    if (maxRange !== undefined) {
+      const anchorDate = parseISO(selectedId);
+      const hoverDate = parseISO(hovId);
+      const dist = Math.abs(differenceInCalendarDays(hoverDate, anchorDate)) + 1;
+      if (dist > maxRange) {
+        const direction = hoverDate > anchorDate ? 1 : -1;
+        const clampedDate = new Date(anchorDate);
+        clampedDate.setDate(clampedDate.getDate() + direction * (maxRange - 1));
+        hovId = dayIdFromDate(clampedDate);
+      }
+    }
+
     const [lo, hi] = selectedId < hovId ? [selectedId, hovId] : [hovId, selectedId];
 
     for (const [id, state] of stateMap) {
@@ -198,8 +229,12 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
         state.hovered = true;
       }
     }
-    hoveredIds.add(day.id);
-    day.state.hovered = true;
+    // Hover the effective target day
+    const targetState = stateMap.get(hovId);
+    if (targetState) {
+      hoveredIds.add(hovId);
+      targetState.hovered = true;
+    }
   }
 
   function resetHover() {

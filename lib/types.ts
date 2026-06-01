@@ -147,6 +147,12 @@ export interface MonthlyOptions<M extends SelectionMode | undefined = undefined>
   count?: number;
   /** Number of months to advance/retreat per navigation step. Defaults to 1. */
   step?: number;
+  /** Minimum number of days in a range selection (inclusive of endpoints). Only applies to range mode. */
+  minRange?: number;
+  /** Maximum number of days in a range selection (inclusive of endpoints). Only applies to range mode. */
+  maxRange?: number;
+  /** Maximum number of selected days in multiple mode. */
+  maxSelections?: number;
 }
 
 export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> {
@@ -156,6 +162,12 @@ export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> 
   count?: number;
   /** Number of weeks to advance/retreat per navigation step. Defaults to 1. */
   step?: number;
+  /** Minimum number of days in a range selection (inclusive of endpoints). Only applies to range mode. */
+  minRange?: number;
+  /** Maximum number of days in a range selection (inclusive of endpoints). Only applies to range mode. */
+  maxRange?: number;
+  /** Maximum number of selected days in multiple mode. */
+  maxSelections?: number;
 }
 
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {

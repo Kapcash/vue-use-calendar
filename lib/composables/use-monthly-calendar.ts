@@ -7,7 +7,7 @@ import { isDateDisabled } from "../utils/date";
 
 export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
   return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M> = {}): MonthlyCalendarComposable<T, M> {
-    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1 } = opts;
+    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1, minRange, maxRange, maxSelections } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -32,6 +32,7 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
     const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
       mode,
+      { minRange, maxRange, maxSelections },
     );
 
     const nav = createNavigation<MonthId, Month<T>>(
