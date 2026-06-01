@@ -570,6 +570,85 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('isRangeStart / isRangeEnd', () => {
+    it('should mark range start and end when two dates are selected', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]);
+
+      expect(enabledDays[0].state.isRangeStart).toBe(true);
+      expect(enabledDays[0].state.isRangeEnd).toBe(false);
+      expect(enabledDays[6].state.isRangeStart).toBe(false);
+      expect(enabledDays[6].state.isRangeEnd).toBe(true);
+    });
+
+    it('should not mark range endpoints when only one date is selected', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[3]);
+
+      expect(enabledDays[3].state.isRangeStart).toBe(false);
+      expect(enabledDays[3].state.isRangeEnd).toBe(false);
+    });
+
+    it('should clear range endpoints when selection is cleared', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, clearSelection } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]);
+
+      expect(enabledDays[0].state.isRangeStart).toBe(true);
+      expect(enabledDays[6].state.isRangeEnd).toBe(true);
+
+      clearSelection();
+
+      expect(enabledDays[0].state.isRangeStart).toBe(false);
+      expect(enabledDays[6].state.isRangeEnd).toBe(false);
+    });
+
+    it('should update range endpoints when a new range is started', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectRange(enabledDays[0]);
+      listeners.selectRange(enabledDays[6]);
+
+      // Start new range (3rd click clears previous)
+      listeners.selectRange(enabledDays[10]);
+
+      expect(enabledDays[0].state.isRangeStart).toBe(false);
+      expect(enabledDays[6].state.isRangeEnd).toBe(false);
+      expect(enabledDays[10].state.isRangeStart).toBe(false);
+      expect(enabledDays[10].state.isRangeEnd).toBe(false);
+    });
+
+    it('should handle reversed selection order correctly', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      // Select end before start
+      listeners.selectRange(enabledDays[6]);
+      listeners.selectRange(enabledDays[0]);
+
+      expect(enabledDays[0].state.isRangeStart).toBe(true);
+      expect(enabledDays[6].state.isRangeEnd).toBe(true);
+    });
+  });
+
   describe('isWeekend', () => {
     it('should correctly identify Saturday and Sunday', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);

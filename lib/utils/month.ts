@@ -1,5 +1,5 @@
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from "date-fns";
-import { CalendarDay, Month, NormalizedCalendarOptions, MonthId, StateProvider, SelectionMode } from "../types";
+import { CalendarDay, Month, NormalizedCalendarOptions, MonthId, StateProvider } from "../types";
 import { generateConsecutiveDays } from "../core/calendar-day";
 
 // ── Month ID arithmetic ──────────────────────────────────────────────────────

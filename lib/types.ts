@@ -22,6 +22,8 @@ export interface CalendarDayState {
   hovered: boolean;
   between: boolean;
   disabled: boolean;
+  isRangeStart: boolean;
+  isRangeEnd: boolean;
 }
 
 /** Function that returns a shared CalendarDayState for a given day ID. */

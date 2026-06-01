@@ -1,5 +1,5 @@
 import { startOfWeek, endOfWeek, getWeek, getWeekYear, addDays } from "date-fns";
-import { Week, NormalizedCalendarOptions, WeekId, StateProvider, FirstDayOfWeek, SelectionMode } from "../types";
+import { Week, NormalizedCalendarOptions, WeekId, StateProvider, FirstDayOfWeek } from "../types";
 import { generateConsecutiveDays } from "../core/calendar-day";
 
 // ── Week ID arithmetic ───────────────────────────────────────────────────────

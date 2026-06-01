@@ -29,6 +29,8 @@ export function createCalendarDay<T>(
       hovered: false,
       between: false,
       disabled,
+      isRangeStart: false,
+      isRangeEnd: false,
     });
 
   const meta = options.meta(d);

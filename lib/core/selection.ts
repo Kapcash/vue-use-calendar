@@ -40,6 +40,8 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
         hovered: hoveredIds.has(id),
         between: false,
         disabled,
+        isRangeStart: false,
+        isRangeEnd: false,
       });
       stateMap.set(id, state);
     }
@@ -73,21 +75,53 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
   // This ensures between-state is accurate synchronously after any selection change
   // and also re-runs when new days are added to stateMap via navigation.
   let prevBetweenIds = new Set<string>();
-  watchEffect(() => {
-    const next = betweenIds.value;
-    // Clear states that are no longer between
+  let prevRangeStartId: string | null = null;
+  let prevRangeEndId: string | null = null;
+
+  function syncBetweenState(next: Set<string>) {
     for (const id of prevBetweenIds) {
       if (!next.has(id)) {
         const state = stateMap.get(id);
         if (state) { state.between = false; }
       }
     }
-    // Set states that are newly between
     for (const id of next) {
       const state = stateMap.get(id);
       if (state) { state.between = true; }
     }
     prevBetweenIds = new Set(next);
+  }
+
+  function syncRangeEndpoints() {
+    let newStartId: string | null = null;
+    let newEndId: string | null = null;
+    if (selectedIds.size === 2) {
+      const [id0, id1] = Array.from(selectedIds);
+      [newStartId, newEndId] = id0 < id1 ? [id0, id1] : [id1, id0];
+    }
+    if (prevRangeStartId && prevRangeStartId !== newStartId) {
+      const state = stateMap.get(prevRangeStartId);
+      if (state) { state.isRangeStart = false; }
+    }
+    if (prevRangeEndId && prevRangeEndId !== newEndId) {
+      const state = stateMap.get(prevRangeEndId);
+      if (state) { state.isRangeEnd = false; }
+    }
+    if (newStartId) {
+      const state = stateMap.get(newStartId);
+      if (state) { state.isRangeStart = true; }
+    }
+    if (newEndId) {
+      const state = stateMap.get(newEndId);
+      if (state) { state.isRangeEnd = true; }
+    }
+    prevRangeStartId = newStartId;
+    prevRangeEndId = newEndId;
+  }
+
+  watchEffect(() => {
+    syncBetweenState(betweenIds.value);
+    syncRangeEndpoints();
   }, { flush: 'sync' });
 
   // ── Targeted state helpers ───────────────────────────────────────
