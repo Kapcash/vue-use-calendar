@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
 import { addDays, addWeeks, isSameDay, startOfWeek } from 'date-fns';
-import { isReactive, isRef, nextTick } from 'vue';
+import { isReactive, isRef, nextTick, ref } from 'vue';
 import { WeeklyOptions } from '../lib/types';
 import { useCalendar } from '../lib/use-calendar';
 import { areConsecutiveDays } from './helpers';
@@ -791,6 +791,385 @@ describe('use-weekly-calendar', () => {
       expect(a.visibleWeeks.value).toHaveLength(1);
       expect(b.visibleWeeks.value).toHaveLength(1);
       expect(a.visibleWeeks.value[0].id).toEqual(b.visibleWeeks.value[0].id);
+    });
+  });
+
+  describe('disabled function predicate', () => {
+    it('should disable all Saturdays when disabled is a function', () => {
+      const { useWeeklyCalendar } = useCalendar({
+        startOn: mockToday,
+        disabled: (date: Date) => date.getDay() === 6,
+      });
+      const { currentWeek } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const saturdays = currentWeek.value.days.filter(d => d.dayOfWeek === 6);
+      expect(saturdays.length).toBeGreaterThan(0);
+      saturdays.forEach(d => expect(d.state.disabled).toBe(true));
+
+      const nonSaturdays = currentWeek.value.days.filter(d => d.dayOfWeek !== 6);
+      nonSaturdays.forEach(d => expect(d.state.disabled).toBe(false));
+    });
+
+    it('should not allow selecting a function-disabled date', () => {
+      const { useWeeklyCalendar } = useCalendar({
+        startOn: mockToday,
+        disabled: (date: Date) => date.getDay() === 6,
+      });
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const saturday = currentWeek.value.days.find(d => d.dayOfWeek === 6)!;
+      listeners.selectSingle(saturday);
+
+      expect(selectedDates.value).toHaveLength(0);
+    });
+  });
+
+  describe('selection constraints', () => {
+    it('should reject range selection shorter than minRange', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'range' as const, minRange: 4,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[2]); // 3 days — less than minRange=4
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(days[2].state.selected).toBe(false);
+    });
+
+    it('should accept range selection at exactly minRange', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'range' as const, minRange: 4,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[3]); // 4 days — exactly minRange=4
+
+      expect(selectedDates.value).toHaveLength(2);
+    });
+
+    it('should reject range selection longer than maxRange', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'range' as const, maxRange: 3,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[5]); // 6 days — exceeds maxRange=3
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(days[5].state.selected).toBe(false);
+    });
+
+    it('should accept range selection at exactly maxRange', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'range' as const, maxRange: 3,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[2]); // 3 days — exactly maxRange=3
+
+      expect(selectedDates.value).toHaveLength(2);
+    });
+
+    it('should block selection beyond maxSelections in multiple mode', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'multiple' as const, maxSelections: 2,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectMultiple(days[0]);
+      listeners.selectMultiple(days[1]);
+      listeners.selectMultiple(days[2]); // Should be blocked
+
+      expect(selectedDates.value).toHaveLength(2);
+      expect(days[2].state.selected).toBe(false);
+    });
+
+    it('should allow deselecting when at maxSelections', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'multiple' as const, maxSelections: 2,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectMultiple(days[0]);
+      listeners.selectMultiple(days[1]);
+
+      listeners.selectMultiple(days[0]); // Deselect one
+      expect(selectedDates.value).toHaveLength(1);
+
+      listeners.selectMultiple(days[2]); // Now allowed
+      expect(selectedDates.value).toHaveLength(2);
+    });
+
+    it('should clamp hoverRange preview to maxRange', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'range' as const, maxRange: 3,
+      });
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.hoverRange(days[6]); // Hover far beyond maxRange=3
+
+      const hoveredDays = currentWeek.value.days.filter(d => d.state.hovered);
+      expect(hoveredDays.length).toBeLessThanOrEqual(2);
+      expect(hoveredDays.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('onSelect callback', () => {
+    it('should fire onSelect when a date is selected', async () => {
+      const onSelect = vi.fn();
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, onSelect });
+
+      listeners.selectSingle(currentWeek.value.days[0]);
+      await nextTick();
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith([currentWeek.value.days[0]]);
+    });
+
+    it('should fire onSelect with empty array when selection is cleared', async () => {
+      const onSelect = vi.fn();
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, clearSelection } = useWeeklyCalendar({ ...defaultWeeklyOptions, onSelect });
+
+      listeners.selectSingle(currentWeek.value.days[0]);
+      await nextTick();
+      onSelect.mockClear();
+
+      clearSelection();
+      await nextTick();
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith([]);
+    });
+
+    it('should fire onSelect for each selection in multiple mode', async () => {
+      const onSelect = vi.fn();
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar({
+        ...defaultWeeklyOptions, mode: 'multiple' as const, onSelect,
+      });
+
+      listeners.selectMultiple(currentWeek.value.days[0]);
+      listeners.selectMultiple(currentWeek.value.days[1]);
+      await nextTick();
+
+      expect(onSelect).toHaveBeenCalledTimes(2);
+      expect(onSelect).toHaveBeenLastCalledWith(
+        expect.arrayContaining([currentWeek.value.days[0], currentWeek.value.days[1]]),
+      );
+    });
+  });
+
+  describe('isRangeStart / isRangeEnd', () => {
+    it('should mark range start and end when two dates are selected', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[5]);
+
+      expect(days[0].state.isRangeStart).toBe(true);
+      expect(days[0].state.isRangeEnd).toBe(false);
+      expect(days[5].state.isRangeStart).toBe(false);
+      expect(days[5].state.isRangeEnd).toBe(true);
+    });
+
+    it('should not mark range endpoints when only one date is selected', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[2]);
+
+      expect(days[2].state.isRangeStart).toBe(false);
+      expect(days[2].state.isRangeEnd).toBe(false);
+    });
+
+    it('should clear range endpoints when selection is cleared', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, clearSelection } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[5]);
+
+      clearSelection();
+
+      expect(days[0].state.isRangeStart).toBe(false);
+      expect(days[5].state.isRangeEnd).toBe(false);
+    });
+
+    it('should update range endpoints when a new range is started', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      listeners.selectRange(days[0]);
+      listeners.selectRange(days[5]);
+
+      // 3rd click clears the previous range and starts fresh
+      listeners.selectRange(days[3]);
+
+      expect(days[0].state.isRangeStart).toBe(false);
+      expect(days[5].state.isRangeEnd).toBe(false);
+    });
+
+    it('should handle reversed selection order correctly', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      // Select the chronologically later day first
+      listeners.selectRange(days[5]);
+      listeners.selectRange(days[1]);
+
+      expect(days[1].state.isRangeStart).toBe(true);
+      expect(days[5].state.isRangeEnd).toBe(true);
+    });
+  });
+
+  describe('modelValue (v-model support)', () => {
+    it('should sync internal selection to external modelValue ref', () => {
+      const model = ref<Date[]>([]);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, modelValue: model });
+
+      const day = currentWeek.value.days[2];
+      listeners.selectSingle(day);
+
+      expect(model.value).toHaveLength(1);
+      expect(isSameDay(model.value[0], day.date)).toBe(true);
+    });
+
+    it('should sync external modelValue changes to internal selection', async () => {
+      const model = ref<Date[]>([]);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { selectedDates, currentWeek } = useWeeklyCalendar({ ...defaultWeeklyOptions, modelValue: model });
+
+      model.value = [currentWeek.value.days[3].date];
+      await nextTick();
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(isSameDay(selectedDates.value[0].date, currentWeek.value.days[3].date)).toBe(true);
+    });
+
+    it('should clear internal selection when modelValue is set to empty', async () => {
+      const model = ref<Date[]>([]);
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners, selectedDates } = useWeeklyCalendar({ ...defaultWeeklyOptions, modelValue: model });
+
+      listeners.selectSingle(currentWeek.value.days[2]);
+      expect(selectedDates.value).toHaveLength(1);
+
+      model.value = [];
+      await nextTick();
+
+      expect(selectedDates.value).toHaveLength(0);
+    });
+
+    it('should not cause an infinite loop when modelValue is used', async () => {
+      const model = ref<Date[]>([]);
+      const onSelect = vi.fn();
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { currentWeek, listeners } = useWeeklyCalendar({ ...defaultWeeklyOptions, modelValue: model, onSelect });
+
+      listeners.selectSingle(currentWeek.value.days[0]);
+      await nextTick();
+
+      expect(onSelect.mock.calls.length).toBeLessThan(10);
+    });
+  });
+
+  describe('keyboard navigation', () => {
+    it('should start with null focusedDayId', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      expect(focusedDayId.value).toBeNull();
+    });
+
+    it('should focus first visible day on initial moveFocus', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentWeek } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      moveFocus('right');
+
+      expect(focusedDayId.value).toBe(currentWeek.value.days[0].id);
+    });
+
+    it('should move focus right by 1 day', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentWeek } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      focusedDayId.value = days[0].id;
+
+      moveFocus('right');
+
+      expect(focusedDayId.value).toBe(days[1].id);
+    });
+
+    it('should move focus left by 1 day', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentWeek } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      focusedDayId.value = days[4].id;
+
+      moveFocus('left');
+
+      expect(focusedDayId.value).toBe(days[3].id);
+    });
+
+    it('should select the focused day with selectFocused', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, selectFocused, currentWeek, selectedDates } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      focusedDayId.value = days[2].id;
+
+      selectFocused();
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(selectedDates.value[0].id).toBe(days[2].id);
+    });
+
+    it('should skip disabled days when moving right', () => {
+      const { useWeeklyCalendar } = useCalendar({
+        startOn: mockToday,
+        disabled: [new Date(2022, 2, 8)], // Tuesday = days[2]
+      });
+      const { focusedDayId, moveFocus, currentWeek } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      const days = currentWeek.value.days;
+      focusedDayId.value = days[1].id; // Monday
+
+      moveFocus('right');
+
+      // Should skip Tuesday (disabled) and land on Wednesday
+      expect(focusedDayId.value).toBe(days[3].id);
+    });
+
+    it('should expose focusToday as a function', () => {
+      const { useWeeklyCalendar } = useCalendar(defaultOptions);
+      const { focusToday } = useWeeklyCalendar(defaultWeeklyOptions);
+
+      expect(typeof focusToday).toBe('function');
     });
   });
 });

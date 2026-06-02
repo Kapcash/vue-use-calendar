@@ -36,6 +36,9 @@ import WeeklyPage from './pages/WeeklyPage.vue';
 import PricePage from './pages/PricePage.vue';
 import MultiplePage from './pages/MultiplePage.vue';
 import MultiMonthPage from './pages/MultiMonthPage.vue';
+import ConstraintsPage from './pages/ConstraintsPage.vue';
+import KeyboardNavPage from './pages/KeyboardNavPage.vue';
+import VModelPage from './pages/VModelPage.vue';
 
 const tabs = [
   { id: 'datepicker', label: '📅 Date Picker', component: DatePickerPage },
@@ -44,6 +47,9 @@ const tabs = [
   { id: 'price', label: '💰 Price Calendar', component: PricePage },
   { id: 'multiple', label: '✅ Multiple Select', component: MultiplePage },
   { id: 'multimonth', label: '📅📅 Multi-Month', component: MultiMonthPage },
+  { id: 'constraints', label: '🔒 Constraints', component: ConstraintsPage },
+  { id: 'keyboard', label: '⌨️ Keyboard Nav', component: KeyboardNavPage },
+  { id: 'vmodel', label: '🔗 v-model', component: VModelPage },
 ] as const;
 
 const activeTab = ref<string>('datepicker');
