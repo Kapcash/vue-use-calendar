@@ -3,6 +3,7 @@ import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOpt
 import { monthIdFromDate, monthIdFromYearMonth, monthFromMonthId, yearFromMonthId, generateMonth } from "../utils/month";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
+import { createKeyboardNavigation } from "../core/keyboard-navigation";
 import { isDateDisabled } from "../utils/date";
 
 export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
@@ -29,7 +30,7 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
     const cacheSize = Math.max(13, preGenerateCount, count + 10);
 
     // Create selection state — getOrCreateState is needed by generateMonth
-    const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
+    const { selectedIds, listeners, getOrCreateState, stateMap, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
       mode,
       { minRange, maxRange, maxSelections },
@@ -150,6 +151,15 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       nav.prev();
     }
 
+    // Keyboard navigation
+    const { focusedDayId, moveFocus, focusToday, selectFocused } = createKeyboardNavigation({
+      stateMap,
+      selectDate,
+      navigateNext: () => nav.next(),
+      navigatePrev: () => nav.prev(),
+      getVisibleDayIds: () => nav.visiblePeriods.value.flatMap(m => m.days.filter(d => !d.otherMonth).map(d => d.id)),
+    });
+
     return {
       currentMonth: nav.currentPeriod,
       currentMonthAndYear,
@@ -165,6 +175,10 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
       listeners,
       selectDate,
       clearSelection,
+      focusedDayId,
+      moveFocus,
+      focusToday,
+      selectFocused,
     };
   };
 }

@@ -180,6 +180,8 @@ export interface WeeklyOptions<M extends SelectionMode | undefined = undefined, 
   modelValue?: Ref<Date[]>;
 }
 
+export type FocusDirection = 'up' | 'down' | 'left' | 'right';
+
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
   currentMonthAndYear: Reactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<T>>;
@@ -195,6 +197,14 @@ export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode 
   listeners: ModeHandlers<T, M>;
   selectDate: (date: Date) => void;
   clearSelection: () => void;
+  /** Currently focused day ID (keyboard navigation). */
+  focusedDayId: Ref<string | null>;
+  /** Move keyboard focus. left/right = ±1 day, up/down = ±7 days. */
+  moveFocus: (direction: FocusDirection) => void;
+  /** Move focus to today. */
+  focusToday: () => void;
+  /** Select the currently focused day. */
+  selectFocused: () => void;
 }
 
 export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
@@ -211,6 +221,14 @@ export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode |
   listeners: ModeHandlers<T, M>;
   selectDate: (date: Date) => void;
   clearSelection: () => void;
+  /** Currently focused day ID (keyboard navigation). */
+  focusedDayId: Ref<string | null>;
+  /** Move keyboard focus. left/right = ±1 day, up/down = ±7 days. */
+  moveFocus: (direction: FocusDirection) => void;
+  /** Move focus to today. */
+  focusToday: () => void;
+  /** Select the currently focused day. */
+  selectFocused: () => void;
 }
 
 export interface CalendarComposables<T = unknown> {

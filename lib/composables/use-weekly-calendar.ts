@@ -2,6 +2,7 @@ import { computed, reactive, watch, watchEffect } from "vue";
 import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId, SelectionMode } from "../types";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
+import { createKeyboardNavigation } from "../core/keyboard-navigation";
 import { weekIdFromDate, weekFromWeekId, yearFromWeekId, generateWeek, makeNextWeekId, makePrevWeekId } from "../utils/week";
 import { isDateDisabled } from "../utils/date";
 
@@ -25,7 +26,7 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
     }
 
     // Create selection state — getOrCreateState is needed by generateWeek
-    const { selectedIds, listeners, getOrCreateState, selectDate, clearSelection } = createSelectionState<T, M>(
+    const { selectedIds, listeners, getOrCreateState, stateMap, selectDate, clearSelection } = createSelectionState<T, M>(
       globalOptions.preSelection,
       mode as M,
       { minRange, maxRange, maxSelections },
@@ -136,6 +137,15 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       },
     });
 
+    // Keyboard navigation
+    const { focusedDayId, moveFocus, focusToday, selectFocused } = createKeyboardNavigation({
+      stateMap,
+      selectDate,
+      navigateNext: () => nav.next(),
+      navigatePrev: () => nav.prev(),
+      getVisibleDayIds: () => nav.visiblePeriods.value.flatMap(w => w.days.map(d => d.id)),
+    });
+
     return {
       currentWeek: nav.currentPeriod,
       currentWeekAndYear,
@@ -150,6 +160,10 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       listeners,
       selectDate,
       clearSelection,
+      focusedDayId,
+      moveFocus,
+      focusToday,
+      selectFocused,
     };
   };
 }

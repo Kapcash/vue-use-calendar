@@ -286,6 +286,7 @@ export function createSelectionState<T, M extends SelectionMode | undefined = un
     selectedIds,
     listeners,
     getOrCreateState,
+    stateMap,
     selectDate,
     clearSelection,
   };

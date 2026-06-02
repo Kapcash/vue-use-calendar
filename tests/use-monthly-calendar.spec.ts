@@ -900,6 +900,104 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('keyboard navigation', () => {
+    it('should start with null focusedDayId', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      expect(focusedDayId.value).toBeNull();
+    });
+
+    it('should focus first visible day on initial moveFocus', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      moveFocus('right');
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      expect(focusedDayId.value).toBe(enabledDays[0].id);
+    });
+
+    it('should move focus right by 1 day', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      focusedDayId.value = enabledDays[0].id;
+
+      moveFocus('right');
+
+      expect(focusedDayId.value).toBe(enabledDays[1].id);
+    });
+
+    it('should move focus left by 1 day', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      focusedDayId.value = enabledDays[3].id;
+
+      moveFocus('left');
+
+      expect(focusedDayId.value).toBe(enabledDays[2].id);
+    });
+
+    it('should move focus down by 7 days', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      focusedDayId.value = enabledDays[0].id;
+
+      moveFocus('down');
+
+      expect(focusedDayId.value).toBe(enabledDays[7].id);
+    });
+
+    it('should move focus up by 7 days', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      focusedDayId.value = enabledDays[10].id;
+
+      moveFocus('up');
+
+      expect(focusedDayId.value).toBe(enabledDays[3].id);
+    });
+
+    it('should select the focused day with selectFocused', () => {
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { focusedDayId, selectFocused, currentMonth, selectedDates } = useMonthlyCalendar(defaultMonthlyOptions);
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+      focusedDayId.value = enabledDays[5].id;
+
+      selectFocused();
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(selectedDates.value[0].id).toBe(enabledDays[5].id);
+    });
+
+    it('should skip disabled days when moving', () => {
+      const { useMonthlyCalendar } = useCalendar({
+        minDate: new Date(2022, 2, 1),
+        maxDate: new Date(2022, 2, 31),
+        disabled: [new Date(2022, 2, 16)],
+      });
+      const { focusedDayId, moveFocus, currentMonth } = useMonthlyCalendar({ ...defaultMonthlyOptions, infinite: false });
+
+      // Focus the day before the disabled one
+      const day15 = currentMonth.value.days.find(d => d.id === '2022-03-15')!;
+      focusedDayId.value = day15.id;
+
+      moveFocus('right');
+
+      // Should skip 2022-03-16 (disabled) and land on 2022-03-17
+      expect(focusedDayId.value).toBe('2022-03-17');
+    });
+  });
+
   describe('isWeekend', () => {
     it('should correctly identify Saturday and Sunday', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);
