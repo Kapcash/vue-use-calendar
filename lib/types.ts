@@ -141,7 +141,7 @@ export interface NormalizedCalendarOptions<T = unknown> {
 
 // ── Composable return types ─────────────────────────────────────────
 
-export interface MonthlyOptions<M extends SelectionMode | undefined = undefined> {
+export interface MonthlyOptions<M extends SelectionMode | undefined = undefined, T = unknown> {
   infinite?: boolean;
   fullWeeks?: boolean;
   mode?: M;
@@ -155,9 +155,11 @@ export interface MonthlyOptions<M extends SelectionMode | undefined = undefined>
   maxRange?: number;
   /** Maximum number of selected days in multiple mode. */
   maxSelections?: number;
+  /** Callback invoked whenever the selection changes. */
+  onSelect?: (selectedDates: CalendarDay<T>[]) => void;
 }
 
-export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> {
+export interface WeeklyOptions<M extends SelectionMode | undefined = undefined, T = unknown> {
   infinite?: boolean;
   mode?: M;
   /** Number of consecutive weeks to display simultaneously. Defaults to 1. */
@@ -170,6 +172,8 @@ export interface WeeklyOptions<M extends SelectionMode | undefined = undefined> 
   maxRange?: number;
   /** Maximum number of selected days in multiple mode. */
   maxSelections?: number;
+  /** Callback invoked whenever the selection changes. */
+  onSelect?: (selectedDates: CalendarDay<T>[]) => void;
 }
 
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {
@@ -206,8 +210,8 @@ export interface WeeklyCalendarComposable<T = unknown, M extends SelectionMode |
 }
 
 export interface CalendarComposables<T = unknown> {
-  useMonthlyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: MonthlyOptions<M>) => MonthlyCalendarComposable<T, M>;
-  useWeeklyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M>) => WeeklyCalendarComposable<T, M>;
+  useMonthlyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: MonthlyOptions<M, T>) => MonthlyCalendarComposable<T, M>;
+  useWeeklyCalendar: <M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M, T>) => WeeklyCalendarComposable<T, M>;
   useWeekdays: (format?: MaybeRefOrGetter<WeekdayInputFormat>) => ComputedRef<string[]>;
   useMonthsList: (opts?: { format?: MaybeRefOrGetter<MonthInputFormat> }) => ComputedRef<string[]>;
   useYearsList: (opts?: YearsListOptions) => ComputedRef<string[]>;

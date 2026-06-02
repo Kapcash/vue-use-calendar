@@ -1,4 +1,4 @@
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { Week, WeeklyCalendarComposable, WeeklyOptions, NormalizedCalendarOptions, WeekId, SelectionMode } from "../types";
 import { createNavigation } from "../core/navigation";
 import { createSelectionState } from "../core/selection";
@@ -10,8 +10,8 @@ const DEFAULT_WEEKLY_OPTS = {
 };
 
 export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
-  return function useWeeklyCalendar<M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M>): WeeklyCalendarComposable<T, M> {
-    const { infinite, mode, count = 1, step = 1, minRange, maxRange, maxSelections } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
+  return function useWeeklyCalendar<M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M, T>): WeeklyCalendarComposable<T, M> {
+    const { infinite, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
     const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
 
@@ -92,6 +92,11 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
     });
 
     const selectedDates = computed(() => days.value.filter(d => selectedIds.has(d.id)));
+
+    // Fire onSelect callback when selection changes
+    if (onSelect) {
+      watch(selectedDates, (val) => { onSelect(val); }, { flush: 'sync' });
+    }
 
     // Reactive currentWeekAndYear backed by nav — getter/setter removes watch loops.
     const currentWeekAndYear = reactive({

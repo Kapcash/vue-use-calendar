@@ -1,4 +1,4 @@
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { Month, MonthlyCalendarComposable, MonthlyOptions, NormalizedCalendarOptions, MonthId, SelectionMode } from "../types";
 import { monthIdFromDate, monthIdFromYearMonth, monthFromMonthId, yearFromMonthId, generateMonth } from "../utils/month";
 import { createNavigation } from "../core/navigation";
@@ -6,8 +6,8 @@ import { createSelectionState } from "../core/selection";
 import { isDateDisabled } from "../utils/date";
 
 export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
-  return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M> = {}): MonthlyCalendarComposable<T, M> {
-    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1, minRange, maxRange, maxSelections } = opts;
+  return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M, T> = {}): MonthlyCalendarComposable<T, M> {
+    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -94,6 +94,11 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
     });
 
     const selectedDates = computed(() => pureDays.value.filter(d => selectedIds.has(d.id)));
+
+    // Fire onSelect callback when selection changes
+    if (onSelect) {
+      watch(selectedDates, (val) => { onSelect(val); }, { flush: 'sync' });
+    }
 
     // Reactive currentMonthAndYear backed by nav — getter/setter removes watch loops.
     const currentMonthAndYear = reactive({

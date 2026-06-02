@@ -710,6 +710,51 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('onSelect callback', () => {
+    it('should fire onSelect when a date is selected', () => {
+      const onSelect = vi.fn();
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, onSelect });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectSingle(enabledDays[0]);
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith([enabledDays[0]]);
+    });
+
+    it('should fire onSelect with empty array when selection is cleared', () => {
+      const onSelect = vi.fn();
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, clearSelection } = useMonthlyCalendar({ ...defaultMonthlyOptions, onSelect });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectSingle(enabledDays[0]);
+      onSelect.mockClear();
+
+      clearSelection();
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith([]);
+    });
+
+    it('should fire onSelect for each selection in multiple mode', () => {
+      const onSelect = vi.fn();
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, mode: 'multiple', onSelect });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectMultiple(enabledDays[0]);
+      listeners.selectMultiple(enabledDays[1]);
+
+      expect(onSelect).toHaveBeenCalledTimes(2);
+      expect(onSelect).toHaveBeenLastCalledWith(expect.arrayContaining([enabledDays[0], enabledDays[1]]));
+    });
+  });
+
   describe('isRangeStart / isRangeEnd', () => {
     it('should mark range start and end when two dates are selected', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);
