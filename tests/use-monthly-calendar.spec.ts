@@ -430,6 +430,43 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('disabled function predicate', () => {
+    it('should disable all Sundays when disabled is a function', () => {
+      const { useMonthlyCalendar } = useCalendar({
+        minDate: new Date(2022, 2, 1),
+        maxDate: new Date(2022, 2, 31),
+        disabled: (date: Date) => date.getDay() === 0,
+      });
+      const { currentMonth } = useMonthlyCalendar({ ...defaultMonthlyOptions, infinite: false });
+
+      const sundays = currentMonth.value.days.filter(d => !d.otherMonth && d.dayOfWeek === 0);
+      expect(sundays.length).toBeGreaterThan(0);
+      sundays.forEach(d => {
+        expect(d.state.disabled).toBe(true);
+      });
+
+      // Non-Sundays should not be disabled by the function
+      const nonSundays = currentMonth.value.days.filter(d => !d.otherMonth && d.dayOfWeek !== 0);
+      nonSundays.forEach(d => {
+        expect(d.state.disabled).toBe(false);
+      });
+    });
+
+    it('should not allow selecting a function-disabled date', () => {
+      const { useMonthlyCalendar } = useCalendar({
+        minDate: new Date(2022, 2, 1),
+        maxDate: new Date(2022, 2, 31),
+        disabled: (date: Date) => date.getDay() === 0,
+      });
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, infinite: false });
+
+      const sunday = currentMonth.value.days.find(d => !d.otherMonth && d.dayOfWeek === 0)!;
+      listeners.selectSingle(sunday);
+
+      expect(selectedDates.value).toHaveLength(0);
+    });
+  });
+
   describe('selection', () => {
     it('should toggle single selection', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);

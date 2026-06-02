@@ -16,18 +16,22 @@ export function checkIsWeekend(date: Date): boolean {
   return day === 0 || day === 6;
 }
 
-/** Check if a date is disabled by the disabled set, minDate, or maxDate.
+/** Check if a date is disabled by the disabled set, disabledFn, minDate, or maxDate.
  *  `disabledIds` is a Set of "YYYY-MM-DD" strings for O(1) lookup. */
 export function isDateDisabled(
   date: Date,
   disabledIds: Set<string>,
   minDate?: Date,
   maxDate?: Date,
+  disabledFn?: (date: Date) => boolean,
 ): boolean {
   if (minDate && date < minDate && !isSameDay(date, minDate)) {
     return true;
   }
   if (maxDate && date > maxDate && !isSameDay(date, maxDate)) {
+    return true;
+  }
+  if (disabledFn && disabledFn(date)) {
     return true;
   }
   return disabledIds.has(dayIdFromDate(date));

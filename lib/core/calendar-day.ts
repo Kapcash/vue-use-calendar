@@ -20,7 +20,7 @@ export function createCalendarDay<T>(
   const d = startOfDay(date);
   const id = dayIdFromDate(d);
   const otherMonth = overrides?.otherMonth ?? false;
-  const disabled = overrides?.disabled ?? isDateDisabled(d, options.disabledIds, options.minDate, options.maxDate);
+  const disabled = overrides?.disabled ?? isDateDisabled(d, options.disabledIds, options.minDate, options.maxDate, options.disabledFn);
 
   const state: CalendarDayState = stateProvider
     ? stateProvider(id, disabled)

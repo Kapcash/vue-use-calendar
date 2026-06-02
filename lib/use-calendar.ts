@@ -42,9 +42,20 @@ export function normalizeGlobalParameters<T>(opts: CalendarOptions<T> = {}): Nor
       return v ? startOfDay(new Date(v)) : undefined;
     },
     get disabledIds(): Set<string> {
+      const raw = opts.disabled;
+      // If disabled is a predicate function, disabledIds is empty (disabledFn handles it)
+      if (typeof raw === 'function' && raw.length > 0) { return new Set(); }
+      const val = toValue(raw as Exclude<typeof raw, (date: Date) => boolean>);
       return new Set(
-        toValue(opts.disabled)?.map(dis => dayIdFromDate(startOfDay(new Date(dis)))) ?? [],
+        val?.map(dis => dayIdFromDate(startOfDay(new Date(dis)))) ?? [],
       );
+    },
+    get disabledFn(): ((date: Date) => boolean) | undefined {
+      const raw = opts.disabled;
+      // A disabled predicate has length > 0 (takes a date argument).
+      // MaybeRefOrGetter getters have length 0.
+      if (typeof raw === 'function' && raw.length > 0) { return raw as (date: Date) => boolean; }
+      return undefined;
     },
     get firstDayOfWeek(): FirstDayOfWeek {
       return toValue(opts.firstDayOfWeek) || 0;

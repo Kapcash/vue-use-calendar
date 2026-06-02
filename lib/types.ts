@@ -118,7 +118,7 @@ export interface CalendarOptions<T = unknown> {
   startOn?: MaybeRefOrGetter<DateInput | undefined>;
   minDate?: MaybeRefOrGetter<DateInput | undefined>;
   maxDate?: MaybeRefOrGetter<DateInput | undefined>;
-  disabled?: MaybeRefOrGetter<Array<DateInput> | undefined>;
+  disabled?: MaybeRefOrGetter<Array<DateInput> | undefined> | ((date: Date) => boolean);
   firstDayOfWeek?: MaybeRefOrGetter<FirstDayOfWeek | undefined>;
   locale?: MaybeRefOrGetter<Locale | undefined>;
   preSelection?: MaybeRefOrGetter<Array<Date> | Date | undefined>;
@@ -131,6 +131,8 @@ export interface NormalizedCalendarOptions<T = unknown> {
   maxDate?: Date;
   /** Set of "YYYY-MM-DD" day ID strings for O(1) disabled lookup. */
   disabledIds: Set<string>;
+  /** Function-based disabled predicate. Called per-day when provided. */
+  disabledFn?: (date: Date) => boolean;
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
   preSelection: Date[];

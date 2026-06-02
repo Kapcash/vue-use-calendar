@@ -85,8 +85,9 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
       const disabledIds = globalOptions.disabledIds;
       const minDate = globalOptions.minDate;
       const maxDate = globalOptions.maxDate;
+      const disabledFn = globalOptions.disabledFn;
       for (const day of days.value) {
-        day.state.disabled = isDateDisabled(day.date, disabledIds, minDate, maxDate);
+        day.state.disabled = isDateDisabled(day.date, disabledIds, minDate, maxDate, disabledFn);
       }
     });
 
