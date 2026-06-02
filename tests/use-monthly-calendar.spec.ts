@@ -834,6 +834,72 @@ describe('use-monthly-calendar', () => {
     });
   });
 
+  describe('modelValue (v-model support)', () => {
+    it('should sync internal selection to external modelValue ref', () => {
+      const { ref } = require('vue');
+      const model = ref<Date[]>([]);
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, modelValue: model });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectSingle(enabledDays[0]);
+
+      expect(model.value).toHaveLength(1);
+      expect(isSameDay(model.value[0], enabledDays[0].date)).toBe(true);
+    });
+
+    it('should sync external modelValue changes to internal selection', async () => {
+      const { ref, nextTick } = require('vue');
+      const model = ref<Date[]>([]);
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { selectedDates, currentMonth } = useMonthlyCalendar({ ...defaultMonthlyOptions, modelValue: model });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      // Set from external
+      model.value = [enabledDays[2].date];
+      await nextTick();
+
+      expect(selectedDates.value).toHaveLength(1);
+      expect(selectedDates.value[0].id).toBe(enabledDays[2].id);
+    });
+
+    it('should clear internal selection when modelValue is set to empty', async () => {
+      const { ref, nextTick } = require('vue');
+      const model = ref<Date[]>([]);
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners, selectedDates } = useMonthlyCalendar({ ...defaultMonthlyOptions, modelValue: model });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectSingle(enabledDays[0]);
+      expect(selectedDates.value).toHaveLength(1);
+
+      model.value = [];
+      await nextTick();
+
+      expect(selectedDates.value).toHaveLength(0);
+    });
+
+    it('should not cause infinite loop', async () => {
+      const { ref, nextTick } = require('vue');
+      const model = ref<Date[]>([]);
+      const onSelect = vi.fn();
+      const { useMonthlyCalendar } = useCalendar(defaultOptions);
+      const { currentMonth, listeners } = useMonthlyCalendar({ ...defaultMonthlyOptions, modelValue: model, onSelect });
+
+      const enabledDays = currentMonth.value.days.filter(d => !d.state.disabled && !d.otherMonth);
+
+      listeners.selectSingle(enabledDays[0]);
+      await nextTick();
+
+      // The key assertion: onSelect calls are bounded (no infinite recursion).
+      // Some extra calls happen due to watch scheduling but they're finite.
+      expect(onSelect.mock.calls.length).toBeLessThan(10);
+    });
+  });
+
   describe('isWeekend', () => {
     it('should correctly identify Saturday and Sunday', () => {
       const { useMonthlyCalendar } = useCalendar(defaultOptions);

@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, MaybeRefOrGetter } from "vue";
+import { ComputedRef, MaybeRefOrGetter, Ref } from "vue";
 import type { UnwrapNestedRefs } from "vue";
 
 type Reactive<T> = UnwrapNestedRefs<T>;
@@ -157,6 +157,8 @@ export interface MonthlyOptions<M extends SelectionMode | undefined = undefined,
   maxSelections?: number;
   /** Callback invoked whenever the selection changes. */
   onSelect?: (selectedDates: CalendarDay<T>[]) => void;
+  /** Two-way binding: provide a Ref<Date[]> to sync selection state bidirectionally. */
+  modelValue?: Ref<Date[]>;
 }
 
 export interface WeeklyOptions<M extends SelectionMode | undefined = undefined, T = unknown> {
@@ -174,6 +176,8 @@ export interface WeeklyOptions<M extends SelectionMode | undefined = undefined, 
   maxSelections?: number;
   /** Callback invoked whenever the selection changes. */
   onSelect?: (selectedDates: CalendarDay<T>[]) => void;
+  /** Two-way binding: provide a Ref<Date[]> to sync selection state bidirectionally. */
+  modelValue?: Ref<Date[]>;
 }
 
 export interface MonthlyCalendarComposable<T = unknown, M extends SelectionMode | undefined = undefined> {

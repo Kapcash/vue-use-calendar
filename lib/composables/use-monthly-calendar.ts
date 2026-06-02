@@ -7,7 +7,7 @@ import { isDateDisabled } from "../utils/date";
 
 export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
   return function useMonthlyCalendar<M extends SelectionMode | undefined = undefined>(opts: MonthlyOptions<M, T> = {}): MonthlyCalendarComposable<T, M> {
-    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect } = opts;
+    const { infinite = false, fullWeeks = true, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect, modelValue } = opts;
 
     const startMonthId: MonthId = monthIdFromDate(globalOptions.startOn);
 
@@ -98,6 +98,30 @@ export function monthlyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) 
     // Fire onSelect callback when selection changes
     if (onSelect) {
       watch(selectedDates, (val) => { onSelect(val); }, { flush: 'sync' });
+    }
+
+    // Bidirectional modelValue sync
+    if (modelValue) {
+      let syncing = false;
+
+      // External → internal: when modelValue changes, sync internal selection
+      watch(modelValue, (newDates) => {
+        if (syncing) { return; }
+        syncing = true;
+        clearSelection();
+        for (const date of newDates) {
+          selectDate(date);
+        }
+        syncing = false;
+      });
+
+      // Internal → external: when selection changes, write back to modelValue
+      watch(selectedDates, (val) => {
+        if (syncing) { return; }
+        syncing = true;
+        modelValue.value = val.map(d => d.date);
+        syncing = false;
+      }, { flush: 'sync' });
     }
 
     // Reactive currentMonthAndYear backed by nav — getter/setter removes watch loops.

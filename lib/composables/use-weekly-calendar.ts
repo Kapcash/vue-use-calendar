@@ -11,7 +11,7 @@ const DEFAULT_WEEKLY_OPTS = {
 
 export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
   return function useWeeklyCalendar<M extends SelectionMode | undefined = undefined>(opts?: WeeklyOptions<M, T>): WeeklyCalendarComposable<T, M> {
-    const { infinite, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
+    const { infinite, mode, count = 1, step = 1, minRange, maxRange, maxSelections, onSelect, modelValue } = { ...DEFAULT_WEEKLY_OPTS, ...opts };
 
     const startWeekId = weekIdFromDate(globalOptions.startOn, globalOptions.firstDayOfWeek);
 
@@ -96,6 +96,30 @@ export function weeklyCalendar<T>(globalOptions: NormalizedCalendarOptions<T>) {
     // Fire onSelect callback when selection changes
     if (onSelect) {
       watch(selectedDates, (val) => { onSelect(val); }, { flush: 'sync' });
+    }
+
+    // Bidirectional modelValue sync
+    if (modelValue) {
+      let syncing = false;
+
+      // External → internal: when modelValue changes, sync internal selection
+      watch(modelValue, (newDates) => {
+        if (syncing) { return; }
+        syncing = true;
+        clearSelection();
+        for (const date of newDates) {
+          selectDate(date);
+        }
+        syncing = false;
+      });
+
+      // Internal → external: when selection changes, write back to modelValue
+      watch(selectedDates, (val) => {
+        if (syncing) { return; }
+        syncing = true;
+        modelValue.value = val.map(d => d.date);
+        syncing = false;
+      }, { flush: 'sync' });
     }
 
     // Reactive currentWeekAndYear backed by nav — getter/setter removes watch loops.
